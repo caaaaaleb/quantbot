@@ -1,0 +1,313 @@
+2026-04-03 04:32:38 | INFO     | src.data.kline:__init__:27 - KlineFetcher 初始化完成 - 交易对: BTC/USDT
+2026-04-03 04:32:38 | INFO     | src.strategy.multi_factor:__init__:45 - 策略初始化 - MA(5/20) | 权重: MA=0.5, FR=0.3, Vol=0.2
+2026-04-03 04:32:38 | INFO     | src.risk.risk_manager:__init__:78 - 风控初始化 - 仓位上限=20.0%, 止损=2.0%, 止盈=5.0%, 日亏损上限=10.0%, 日交易上限=20
+2026-04-03 04:32:38 | INFO     | src.execution.trader:__init__:33 - 交易执行器初始化 - 最大重试=3, 延迟=1.0s
+2026-04-03 04:32:38 | INFO     | src.execution.trader:set_dry_run:38 - 模拟模式: 开启
+2026-04-03 04:32:38 | WARNING  | __main__:<module>:106 - 🧪 未检测到真实 API Key，已自动开启模拟交易模式
+2026-04-03 04:32:38 | INFO     | src.data.websocket:__init__:33 - WebSocket 初始化 - 交易对: btcusdt
+2026-04-03 04:32:38 | INFO     | src.data.kline:__init__:27 - KlineFetcher 初始化完成 - 交易对: BTC/USDT
+2026-04-03 04:32:38 | INFO     | src.strategy.multi_factor:__init__:45 - 策略初始化 - MA(5/20) | 权重: MA=0.5, FR=0.3, Vol=0.2
+2026-04-03 04:32:38 | INFO     | src.risk.risk_manager:__init__:78 - 风控初始化 - 仓位上限=20.0%, 止损=2.0%, 止盈=5.0%, 日亏损上限=10.0%, 日交易上限=20
+2026-04-03 04:32:38 | INFO     | src.execution.trader:__init__:33 - 交易执行器初始化 - 最大重试=3, 延迟=1.0s
+2026-04-03 04:32:38 | INFO     | src.execution.trader:set_dry_run:38 - 模拟模式: 开启
+2026-04-03 04:32:38 | WARNING  | main:<module>:106 - 🧪 未检测到真实 API Key，已自动开启模拟交易模式
+2026-04-03 04:32:38 | INFO     | src.data.websocket:__init__:33 - WebSocket 初始化 - 交易对: btcusdt
+2026-04-03 04:32:38 | INFO     | main:startup_event:342 - 🟢 QuantBot 启动中...
+2026-04-03 04:32:38 | INFO     | main:startup_event:345 - ✅ 所有后台任务已启动
+2026-04-03 04:32:38 | INFO     | main:ws_loop:235 - 📡 WebSocket 启动...
+2026-04-03 04:32:38 | INFO     | main:strategy_loop:217 - 🚀 策略循环启动，执行间隔: 60s
+2026-04-03 04:32:38 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:32:38 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:32:38 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:32:48 | ERROR    | src.data.kline:fetch_klines:76 - 获取K线数据失败: binance GET https://api.binance.com/api/v3/exchangeInfo
+2026-04-03 04:32:48 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance GET https://api.binance.com/api/v3/exchangeInfo
+2026-04-03 04:32:48 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:32:48 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:32:48 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:33:18 | ERROR    | src.data.websocket:connect:43 - WebSocket 连接失败: Connection timeout to host wss://stream.binance.com:9443/ws/btcusdt@ticker
+2026-04-03 04:33:18 | INFO     | src.data.websocket:reconnect:48 - 5秒后尝试重连...
+2026-04-03 04:33:48 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:33:48 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:33:48 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:33:58 | ERROR    | src.data.kline:fetch_klines:76 - 获取K线数据失败: binance GET https://api.binance.com/api/v3/exchangeInfo
+2026-04-03 04:33:58 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance GET https://api.binance.com/api/v3/exchangeInfo
+2026-04-03 04:33:58 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:33:58 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:33:58 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:33:58 | ERROR    | src.data.websocket:connect:43 - WebSocket 连接失败: Connection timeout to host wss://stream.binance.com:9443/ws/btcusdt@ticker
+2026-04-03 04:33:58 | INFO     | src.data.websocket:reconnect:48 - 5秒后尝试重连...
+2026-04-03 04:34:33 | ERROR    | src.data.websocket:connect:43 - WebSocket 连接失败: Connection timeout to host wss://stream.binance.com:9443/ws/btcusdt@ticker
+2026-04-03 04:34:33 | INFO     | src.data.websocket:reconnect:48 - 5秒后尝试重连...
+2026-04-03 04:34:58 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:34:58 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:34:58 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:35:08 | ERROR    | src.data.kline:fetch_klines:76 - 获取K线数据失败: binance GET https://api.binance.com/api/v3/exchangeInfo
+2026-04-03 04:35:08 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance GET https://api.binance.com/api/v3/exchangeInfo
+2026-04-03 04:35:08 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:35:08 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:35:08 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:35:09 | ERROR    | src.data.websocket:connect:43 - WebSocket 连接失败: Connection timeout to host wss://stream.binance.com:9443/ws/btcusdt@ticker
+2026-04-03 04:35:09 | INFO     | src.data.websocket:reconnect:48 - 5秒后尝试重连...
+2026-04-03 04:35:45 | ERROR    | src.data.websocket:connect:43 - WebSocket 连接失败: Connection timeout to host wss://stream.binance.com:9443/ws/btcusdt@ticker
+2026-04-03 04:35:45 | INFO     | src.data.websocket:reconnect:48 - 5秒后尝试重连...
+2026-04-03 04:36:08 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:36:08 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:36:08 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:36:18 | ERROR    | src.data.kline:fetch_klines:76 - 获取K线数据失败: binance GET https://api.binance.com/api/v3/exchangeInfo
+2026-04-03 04:36:18 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance GET https://api.binance.com/api/v3/exchangeInfo
+2026-04-03 04:36:18 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:36:18 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:36:18 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:36:21 | ERROR    | src.data.websocket:connect:43 - WebSocket 连接失败: Connection timeout to host wss://stream.binance.com:9443/ws/btcusdt@ticker
+2026-04-03 04:36:21 | INFO     | src.data.websocket:reconnect:48 - 5秒后尝试重连...
+2026-04-03 04:36:57 | ERROR    | src.data.websocket:connect:43 - WebSocket 连接失败: Connection timeout to host wss://stream.binance.com:9443/ws/btcusdt@ticker
+2026-04-03 04:36:57 | INFO     | src.data.websocket:reconnect:48 - 5秒后尝试重连...
+2026-04-03 04:37:18 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:37:18 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:37:18 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:37:28 | ERROR    | src.data.kline:fetch_klines:76 - 获取K线数据失败: binance GET https://api.binance.com/api/v3/exchangeInfo
+2026-04-03 04:37:28 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance GET https://api.binance.com/api/v3/exchangeInfo
+2026-04-03 04:37:28 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:37:28 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:37:28 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:37:33 | ERROR    | src.data.websocket:connect:43 - WebSocket 连接失败: Connection timeout to host wss://stream.binance.com:9443/ws/btcusdt@ticker
+2026-04-03 04:37:33 | INFO     | src.data.websocket:reconnect:48 - 5秒后尝试重连...
+2026-04-03 04:38:09 | ERROR    | src.data.websocket:connect:43 - WebSocket 连接失败: Connection timeout to host wss://stream.binance.com:9443/ws/btcusdt@ticker
+2026-04-03 04:38:09 | INFO     | src.data.websocket:reconnect:48 - 5秒后尝试重连...
+2026-04-03 04:38:16 | INFO     | src.data.websocket:connect:41 - WebSocket 连接成功: wss://stream.binance.com:9443/ws/btcusdt@ticker
+2026-04-03 04:38:28 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:38:28 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:38:28 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:38:32 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 67099.99
+2026-04-03 04:38:32 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67099.99 USDT
+2026-04-03 04:38:32 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=0.242 | 价格=67099.99
+2026-04-03 04:38:32 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=0.242 | MA因子=多头 | 资金费率=负费率(-0.0164%) -> 偏多
+2026-04-03 04:38:32 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:38:32 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:38:32 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:38:32 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:38:32 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:39:32 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:39:32 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:39:32 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:39:42 | ERROR    | src.data.kline:fetch_klines:76 - 获取K线数据失败: binance GET https://api.binance.com/api/v3/klines?interval=1m&limit=100&symbol=BTCUSDT
+2026-04-03 04:39:42 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance GET https://api.binance.com/api/v3/klines?interval=1m&limit=100&symbol=BTCUSDT
+2026-04-03 04:39:42 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:39:42 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:39:42 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:40:42 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:40:42 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:40:42 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:40:44 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 67085.55
+2026-04-03 04:40:44 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:40:44 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=0.077 | 价格=67085.55
+2026-04-03 04:40:44 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=0.077 | MA因子=多头 | 资金费率=中性费率(-0.0059%)
+2026-04-03 04:40:44 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:40:44 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:40:44 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:40:44 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:40:44 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:41:44 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:41:44 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:41:44 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:41:44 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 67009.37
+2026-04-03 04:41:44 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:41:44 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=0.031 | 价格=67009.37
+2026-04-03 04:41:44 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=0.031 | MA因子=多头 | 资金费率=中性费率(0.0082%)
+2026-04-03 04:41:45 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:41:45 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:41:45 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:41:45 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:41:45 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:42:45 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:42:45 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:42:45 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:42:45 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 67019.85
+2026-04-03 04:42:45 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:42:45 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=0.106 | 价格=67019.85
+2026-04-03 04:42:45 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=0.106 | MA因子=多头 | 资金费率=负费率(-0.0200%) -> 偏多
+2026-04-03 04:42:45 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:42:45 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:42:45 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:42:45 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:42:45 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:43:45 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:43:45 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:43:45 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:43:45 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 67018.98
+2026-04-03 04:43:45 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:43:45 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.055 | 价格=67018.98
+2026-04-03 04:43:45 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.055 | MA因子=多头 | 资金费率=中性费率(0.0088%)
+2026-04-03 04:43:45 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:43:45 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:43:45 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:43:45 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:43:45 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:44:45 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:44:45 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:44:45 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:44:45 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 67016.08
+2026-04-03 04:44:45 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:44:45 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.017 | 价格=67016.08
+2026-04-03 04:44:45 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.017 | MA因子=多头 | 资金费率=中性费率(-0.0097%)
+2026-04-03 04:44:45 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:44:45 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:44:45 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:44:45 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:44:45 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:45:45 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:45:45 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:45:45 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:45:45 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 67027.19
+2026-04-03 04:45:45 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:45:45 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.027 | 价格=67027.19
+2026-04-03 04:45:45 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.027 | MA因子=多头 | 资金费率=正费率(0.0102%) -> 偏空
+2026-04-03 04:45:45 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:45:45 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:45:45 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:45:45 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:45:45 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:46:45 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:46:45 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:46:45 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:46:45 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 67006.01
+2026-04-03 04:46:45 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:46:45 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: SELL | 强度=-0.538 | 价格=67006.01
+2026-04-03 04:46:45 | INFO     | main:run_strategy_once:150 - 策略信号: SELL | 强度=-0.538 | MA因子=死叉 | 资金费率=中性费率(-0.0074%)
+2026-04-03 04:46:46 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:46:46 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:46:46 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:46:46 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:46:46 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:47:46 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:47:46 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:47:46 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:47:46 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66986.19
+2026-04-03 04:47:46 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:47:46 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=0.018 | 价格=66986.19
+2026-04-03 04:47:46 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=0.018 | MA因子=空头 | 资金费率=中性费率(-0.0098%)
+2026-04-03 04:47:46 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:47:46 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:47:46 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:47:46 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:47:46 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:48:46 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:48:46 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:48:46 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:48:46 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66993.7
+2026-04-03 04:48:46 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:48:46 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=0.023 | 价格=66993.70
+2026-04-03 04:48:46 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=0.023 | MA因子=空头 | 资金费率=负费率(-0.0121%) -> 偏多
+2026-04-03 04:48:46 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:48:46 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:48:46 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:48:46 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:48:46 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:49:46 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:49:46 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:49:46 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:49:46 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66976.96
+2026-04-03 04:49:46 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:49:46 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=0.088 | 价格=66976.96
+2026-04-03 04:49:46 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=0.088 | MA因子=空头 | 资金费率=中性费率(-0.0025%)
+2026-04-03 04:49:46 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:49:46 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:49:46 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:49:46 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:49:46 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:50:46 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:50:46 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:50:46 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:50:46 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66967.7
+2026-04-03 04:50:46 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:50:46 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.065 | 价格=66967.70
+2026-04-03 04:50:46 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.065 | MA因子=空头 | 资金费率=中性费率(-0.0063%)
+2026-04-03 04:50:46 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:50:46 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:50:46 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:50:46 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:50:46 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:51:46 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:51:46 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:51:46 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:51:47 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66977.85
+2026-04-03 04:51:47 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:51:47 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.065 | 价格=66977.85
+2026-04-03 04:51:47 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.065 | MA因子=空头 | 资金费率=中性费率(-0.0057%)
+2026-04-03 04:51:47 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:51:47 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:51:47 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:51:47 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:51:47 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:52:47 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:52:47 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:52:47 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:52:47 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66939.43
+2026-04-03 04:52:47 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:52:47 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.087 | 价格=66939.43
+2026-04-03 04:52:47 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.087 | MA因子=空头 | 资金费率=中性费率(-0.0003%)
+2026-04-03 04:52:47 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:52:47 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:52:47 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:52:47 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:52:47 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:53:47 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:53:47 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:53:47 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:53:47 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66942.02
+2026-04-03 04:53:47 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:53:47 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.077 | 价格=66942.02
+2026-04-03 04:53:47 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.077 | MA因子=空头 | 资金费率=中性费率(-0.0058%)
+2026-04-03 04:53:47 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:53:47 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:53:47 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:53:47 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:53:47 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:54:47 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:54:47 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:54:47 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:54:47 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66968.28
+2026-04-03 04:54:47 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:54:47 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.055 | 价格=66968.28
+2026-04-03 04:54:47 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.055 | MA因子=空头 | 资金费率=中性费率(0.0063%)
+2026-04-03 04:54:47 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:54:47 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:54:47 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:54:47 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:54:47 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:55:47 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:55:47 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:55:47 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:55:47 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66947.85
+2026-04-03 04:55:47 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:55:47 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.124 | 价格=66947.85
+2026-04-03 04:55:47 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.124 | MA因子=空头 | 资金费率=中性费率(0.0077%)
+2026-04-03 04:55:47 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:55:47 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:55:47 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:55:47 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:55:47 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:56:47 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:56:47 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:56:47 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:56:48 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66944.0
+2026-04-03 04:56:48 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:56:48 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.055 | 价格=66944.00
+2026-04-03 04:56:48 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.055 | MA因子=空头 | 资金费率=中性费率(0.0046%)
+2026-04-03 04:56:48 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:56:48 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:56:48 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:56:48 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:56:48 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...
+2026-04-03 04:57:48 | INFO     | main:run_strategy_once:116 - ============================================================
+2026-04-03 04:57:48 | INFO     | main:run_strategy_once:117 - 🔄 策略执行开始
+2026-04-03 04:57:48 | INFO     | src.data.kline:fetch_klines:50 - 获取K线数据: BTC/USDT 1m x 100
+2026-04-03 04:57:48 | INFO     | src.data.kline:fetch_klines:72 - 成功获取 100 根K线 - 最新价格: 66941.27
+2026-04-03 04:57:48 | INFO     | main:run_strategy_once:131 - 当前价格: BTC/USDT = 67076.05 USDT
+2026-04-03 04:57:48 | INFO     | src.strategy.multi_factor:generate_signal:212 - 策略信号: HOLD | 强度=-0.156 | 价格=66941.27
+2026-04-03 04:57:48 | INFO     | main:run_strategy_once:150 - 策略信号: HOLD | 强度=-0.156 | MA因子=空头 | 资金费率=正费率(0.0200%) -> 偏空
+2026-04-03 04:57:48 | ERROR    | src.execution.trader:get_balance:63 - 获取余额失败: binance requires "apiKey" credential
+2026-04-03 04:57:48 | ERROR    | main:run_strategy_once:202 - 策略执行异常: binance requires "apiKey" credential
+2026-04-03 04:57:48 | INFO     | main:run_strategy_once:206 - 📊 统计 | 总交易=0 | 胜率=0.0% | 总盈亏=+0.0000 USDT
+2026-04-03 04:57:48 | INFO     | main:run_strategy_once:211 - ============================================================
+2026-04-03 04:57:48 | INFO     | main:strategy_loop:221 - ⏳ 等待 60s 后执行下一轮...

@@ -1,0 +1,61 @@
+# QuantBot 配置文件
+
+# 交易对配置（支持多交易对）
+trading:
+  symbols:
+    - "BTC/USDT"
+    - "ETH/USDT"
+    - "SOL/USDT"
+  timeframe: "1m"
+  testnet: false
+
+# 策略配置
+strategy:
+  ma_short: 5
+  ma_long: 20
+  interval: 60  # 执行间隔（秒）
+
+  # 多因子权重
+  weights:
+    ma_signal: 0.5
+    funding_rate: 0.3
+    volume_spike: 0.2
+
+# 风控配置
+risk:
+  max_position_size: 0.2   # 单笔最大仓位 20%
+  stop_loss: 0.02          # 止损 2%
+  take_profit: 0.05        # 止盈 5%
+  max_daily_loss: 0.1      # 单日最大亏损 10%
+  max_trades_per_day: 20   # 每日最大交易次数
+  max_positions: 3         # 最大持仓交易对数量
+
+# 数据配置
+data:
+  kline_limit: 100
+  cache_ttl: 30
+  ws_reconnect_interval: 5  # WebSocket重连间隔（秒）
+
+# WebSocket 配置
+websocket:
+  enabled: true
+  reconnect_interval: 5
+  # 多交易对流地址
+  streams:
+    btcusdt: "btcusdt@ticker"
+    ethusdt: "ethusdt@ticker"
+    solusdt: "solusdt@ticker"
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "logs/quantbot.log"
+  rotation: "10 MB"
+  retention: "7 days"
+
+# 回测配置
+backtest:
+  start_date: "2025-01-01"
+  end_date: "2025-12-31"
+  initial_capital: 10000  # 初始资金 USDT
+  commission: 0.001       # 手续费 0.1%
