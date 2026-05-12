@@ -111,26 +111,23 @@ async def lifespan(app: FastAPI):
     if not api_key or "your_api_key" in api_key:
         DRY_RUN = True
 
-    # 代理配置
-    proxy_url = os.getenv("HTTP_PROXY", "socks5://127.0.0.1:10808")
+    # 代理配置（仅当 HTTP_PROXY 环境变量存在时才启用）
+    proxy_url = os.getenv("HTTP_PROXY", "")
+    proxies = {"http": proxy_url, "https": proxy_url} if proxy_url else None
 
-    # Dry Run 模式不传 API Key，使用公开接口（避免签名请求超时）
+    exchange_kwargs = {
+        "enableRateLimit": True,
+        "options": {"defaultType": "swap"},
+    }
+    if proxies:
+        exchange_kwargs["proxies"] = proxies
+
     if DRY_RUN:
-        exchange = ccxt.bitget({
-            "enableRateLimit": True,
-            "options": {"defaultType": "swap"},
-            "proxies": {"http": proxy_url, "https": proxy_url},
-        })
+        exchange = ccxt.bitget(exchange_kwargs)
         logger.info("🟡 Dry Run 模式：使用公开接口（无 API 签名）")
     else:
-        exchange = ccxt.bitget({
-            "apiKey": api_key,
-            "secret": secret_key,
-            "password": password,
-            "enableRateLimit": True,
-            "options": {"defaultType": "swap"},
-            "proxies": {"http": proxy_url, "https": proxy_url},
-        })
+        exchange_kwargs.update({"apiKey": api_key, "secret": secret_key, "password": password})
+        exchange = ccxt.bitget(exchange_kwargs)
         exchange.load_markets()
 
     if cfg["trading"].get("testnet", False):
