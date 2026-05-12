@@ -1,6 +1,6 @@
 """数据模块"""
 
 from .kline import KlineFetcher
-from .websocket import BinanceWebSocket, MockWebSocket
+from .websocket import BitgetWebSocket, MockWebSocket
 
-__all__ = ["KlineFetcher", "BinanceWebSocket", "MockWebSocket"]
+__all__ = ["KlineFetcher", "BitgetWebSocket", "MockWebSocket"]

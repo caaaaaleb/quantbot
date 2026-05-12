@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuantBot Dashboard</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0B0E17;
+      --bg-secondary: #111827;
+      --bg-card: #131829;
+      --bg-hover: #1A2035;
+      --border: #1E2442;
+      --border-light: #252B45;
+      --text-primary: #E8ECF4;
+      --text-secondary: #8892B0;
+      --text-muted: #4A5568;
+      --accent: #6366F1;
+      --accent-dim: rgba(99,102,241,0.15);
+      --positive: #10B981;
+      --positive-dim: rgba(16,185,129,0.12);
+      --negative: #EF4444;
+      --negative-dim: rgba(239,68,68,0.12);
+      --warning: #F59E0B;
+      --font-sans: 'Inter', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius: 10px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #F8F9FC;
+      --bg-secondary: #EEF0F5;
+      --bg-card: #FFFFFF;
+      --bg-hover: #F0F2F8;
+      --border: #E2E5ED;
+      --border-light: #EBEEF4;
+      --text-primary: #1A1F35;
+      --text-secondary: #5A6478;
+      --text-muted: #9AA3B8;
+      --accent: #4F46E5;
+      --accent-dim: rgba(79,70,229,0.08);
+      --positive: #059669;
+      --positive-dim: rgba(5,150,105,0.08);
+      --negative: #DC2626;
+      --negative-dim: rgba(220,38,38,0.08);
+    }
+
+    [data-theme="amber"] {
+      --bg-primary: #0C0A09;
+      --bg-secondary: #1C1917;
+      --bg-card: #292524;
+      --bg-hover: #352F2C;
+      --border: #44403C;
+      --border-light: #57534E;
+      --text-primary: #F5F5F4;
+      --text-secondary: #A8A29E;
+      --text-muted: #78716C;
+      --accent: #D97706;
+      --accent-dim: rgba(217,119,6,0.15);
+      --positive: #16A34A;
+      --positive-dim: rgba(22,163,74,0.12);
+      --negative: #DC2626;
+      --negative-dim: rgba(220,38,38,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #root { min-height: 100vh; }
+
+    /* ─── Layout ─── */
+    .layout { max-width: 1440px; margin: 0 auto; padding: 0 24px 48px; }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      margin: 0 -24px 32px;
+    }
+
+    .header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .logo {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -1px;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--positive);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ─── Section titles ─── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* ─── Cards ─── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: var(--border-light); }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+    /* ─── Metric pills ─── */
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+
+    .metric-pill {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .metric-pill-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+
+    .metric-pill-value {
+      font-size: 20px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      letter-spacing: -0.5px;
+    }
+
+    .metric-pill-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-family: var(--font-mono);
+    }
+
+    /* ─── Tables ─── */
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg-hover); }
+    td { padding: 12px 14px; vertical-align: middle; }
+
+    .asset-name { font-weight: 600; font-size: 13px; }
+    .asset-symbol { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+
+    /* ─── Badges ─── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      letter-spacing: 0.3px;
+    }
+    .badge-positive { background: var(--positive-dim); color: var(--positive); }
+    .badge-negative { background: var(--negative-dim); color: var(--negative); }
+    .badge-neutral { background: var(--accent-dim); color: var(--accent); }
+
+    /* ─── Ticker list ─── */
+    .ticker-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 8px;
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+    .ticker-item:hover { background: var(--bg-hover); }
+    .ticker-item-left { display: flex; flex-direction: column; gap: 2px; }
+    .ticker-item-right { text-align: right; }
+    .ticker-symbol { font-weight: 600; font-size: 13px; }
+    .ticker-price { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+    .ticker-change { font-size: 11px; font-family: var(--font-mono); font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+    .ticker-change.up { background: var(--positive-dim); color: var(--positive); }
+    .ticker-change.down { background: var(--negative-dim); color: var(--negative); }
+
+    /* ─── Tabs ─── */
+    .tabs { display: flex; gap: 2px; background: var(--bg-secondary); border-radius: 8px; padding: 3px; margin-bottom: 20px; }
+    .tab {
+      flex: 1;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      border: none;
+      background: none;
+    }
+    .tab.active {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    /* ─── Forms ─── */
+    .form-field { margin-bottom: 14px; }
+    .form-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; display: block; }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--accent); }
+    .form-select { appearance: none; cursor: pointer; }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      font-family: var(--font-sans);
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { filter: brightness(1.1); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+    .btn-secondary { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-full { width: 100%; }
+
+    /* ─── Toast ─── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 9999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: var(--shadow);
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-success { background: var(--positive); color: white; }
+    .toast-error { background: var(--negative); color: white; }
+
+    /* ─── Tweaks panel ─── */
+    .tweaks-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9998;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+      transition: transform 0.2s;
+    }
+    .tweaks-toggle:hover { transform: scale(1.05); }
+
+    .tweaks-panel {
+      position: fixed;
+      bottom: 76px;
+      right: 20px;
+      z-index: 9999;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      width: 280px;
+      box-shadow: var(--shadow);
+      transform: translateY(20px) scale(0.95);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .tweaks-panel.open {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      pointer-events: all;
+    }
+    .tweaks-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tweaks-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .tweak-item { margin-bottom: 16px; }
+    .tweak-item:last-child { margin-bottom: 0; }
+    .tweak-item label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .color-options { display: flex; gap: 6px; flex-wrap: wrap; }
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .color-swatch.selected { border-color: var(--text-primary); transform: scale(1.1); }
+
+    /* ─── Empty states ─── */
+    .empty {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
+
+    /* ─── Loading skeleton ─── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-hover) 50%, var(--bg-secondary) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 1024px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ─── Strategy signal bar ─── */
+    .signal-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .signal-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .signal-dot.hold { background: var(--text-muted); }
+    .signal-dot.buy { background: var(--positive); }
+    .signal-dot.sell { background: var(--negative); }
+    .signal-text { font-size: 12px; color: var(--text-secondary); flex: 1; }
+    .signal-sym { font-weight: 600; color: var(--text-primary); margin-right: 4px; }
+    .signal-strength { font-family: var(--font-mono); font-size: 11px; }
+
+    /* ─── Divider ─── */
+    .section-gap { margin-top: 24px; }
+
+    /* ─── KLine Chart ─── */
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      transition: border-color 0.2s;
+    }
+    .chart-card:hover { border-color: var(--border-light); }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .chart-symbol-info { display: flex; align-items: center; gap: 12px; }
+    .chart-symbol-name { font-size: 15px; font-weight: 700; }
+    .chart-price { font-size: 22px; font-weight: 800; font-family: var(--font-mono); color: var(--text-primary); }
+    .chart-change-badge { font-size: 12px; font-weight: 600; font-family: var(--font-mono); padding: 3px 8px; border-radius: 4px; }
+    .chart-change-badge.up { background: var(--positive-dim); color: var(--positive); }
+    .chart-change-badge.down { background: var(--negative-dim); color: var(--negative); }
+    .chart-timeframe-tabs { display: flex; gap: 4px; }
+    .chart-timeframe-tabs .tab { padding: 5px 10px; font-size: 12px; }
+    .chart-container { width: 100%; height: 320px; border-radius: 8px; overflow: hidden; }
+    .chart-legend { display: flex; gap: 16px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 8px; }
+    .chart-legend span { display: flex; align-items: center; gap: 4px; }
+    .chart-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .chart-legend .dot.bullish { background: var(--positive); }
+    .chart-legend .dot.bearish { background: var(--negative); }
+
+    /* ─── P&L Bar ─── */
+    .pnl-bar-wrap { margin-top: 12px; }
+    .pnl-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .pnl-bar-track { height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden; }
+    .pnl-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .pnl-bar-fill.positive { background: var(--positive); }
+    .pnl-bar-fill.negative { background: var(--negative); }
+
+    /* ─── Strategy Signal Card ─── */
+    .signal-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .signal-row { display: flex; align-items: center; gap: 10px; }
+    .signal-indicator { width: 10px; height: 10px; border-radius: 50%; }
+    .signal-indicator.buy { background: var(--positive); box-shadow: 0 0 8px var(--positive); }
+    .signal-indicator.sell { background: var(--negative); box-shadow: 0 0 8px var(--negative); }
+    .signal-indicator.hold { background: var(--text-muted); }
+    .signal-meta { display: flex; align-items: center; gap: 16px; flex: 1; }
+    .signal-meta-item { font-size: 12px; }
+    .signal-meta-item .label { color: var(--text-muted); font-size: 11px; }
+    .signal-meta-item .val { font-weight: 600; font-family: var(--font-mono); color: var(--text-primary); }
+    .signal-factors { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .signal-factor { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: var(--bg-hover); color: var(--text-secondary); border: 1px solid var(--border); }
+    .signal-factor.positive { background: var(--positive-dim); color: var(--positive); border-color: var(--positive); }
+    .signal-factor.negative { background: var(--negative-dim); color: var(--negative); border-color: var(--negative); }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ─── Data Store (simulated, replaces API calls) ───
+const MOCK_TICKERS = [
+  { symbol: 'BTC/USDT', last: '78,421.50', change: '+2.34%', up: true },
+  { symbol: 'ETH/USDT', last: '2,381.22', change: '+1.87%', up: true },
+  { symbol: 'SOL/USDT', last: '142.65', change: '+4.21%', up: true },
+  { symbol: 'BNB/USDT', last: '598.30', change: '-0.45%', up: false },
+  { symbol: 'XRP/USDT', last: '0.5234', change: '+0.92%', up: true },
+  { symbol: 'DOGE/USDT', last: '0.0823', change: '-1.23%', up: false },
+  { symbol: 'ADA/USDT', last: '0.4512', change: '+3.12%', up: true },
+  { symbol: 'AVAX/USDT', last: '35.67', change: '+1.45%', up: true },
+];
+
+const MOCK_ASSETS = [
+  { asset: 'USDT', total: 5.145, free: 5.145, locked: 0, usdt_value: 5.145 },
+  { asset: 'XPL', total: 4.964, free: 4.964, locked: 0, usdt_value: 0.505 },
+  { asset: 'PEPE', total: 0.98, free: 0.98, locked: 0, usdt_value: 0.000 },
+];
+
+const MOCK_POSITIONS = [];
+const MOCK_TRADES = [];
+
+// Config - must match config.yaml trading.symbols
+const SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
+
+// ─── Tweaks System ───
+const TWEAK_DEFAULTS = {
+  theme: 'dark',
+  accentColor: '#6366F1',
+  density: 'normal',
+};
+
+function useTweaks() {
+  const [tweaks, setTweaks] = useState(() => {
+    try {
+      const s = localStorage.getItem('qb-tweaks');
+      return s ? { ...TWEAK_DEFAULTS, ...JSON.parse(s) } : TWEAK_DEFAULTS;
+    } catch { return TWEAK_DEFAULTS; }
+  });
+  const update = useCallback((patch) => {
+    setTweaks(prev => {
+      const next = { ...prev, ...patch };
+      try { localStorage.setItem('qb-tweaks', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+  const reset = useCallback(() => {
+    setTweaks(TWEAK_DEFAULTS);
+    try { localStorage.removeItem('qb-tweaks'); } catch {}
+  }, []);
+  return { tweaks, update, reset };
+}
+
+// ─── Toast ───
+function Toast({ msg, type }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    setShow(true);
+    const t = setTimeout(() => setShow(false), 3000);
+    return () => clearTimeout(t);
+  }, [msg]);
+  return <div className={`toast toast-${type} ${show ? 'show' : ''}`}>{msg}</div>;
+}
+
+// ─── Metric Pill ───
+function MetricPill({ label, value, sub, valueColor }) {
+  return (
+    <div className="metric-pill">
+      <div className="metric-pill-label">{label}</div>
+      <div className="metric-pill-value" style={valueColor ? { color: valueColor } : {}}>{value}</div>
+      {sub && <div className="metric-pill-sub">{sub}</div>}
+    </div>
+  );
+}
+
+// ─── Account Summary Card ───
+function AccountCard({ summary, loading }) {
+  if (loading) {
+    return (
+      <div className="card">
+        <div className="section-label">账户概览</div>
+        <div className="metric-grid">
+          {[1,2,3,4].map(i => <div key={i} className="metric-pill"><div className="skeleton" style={{height:16,width:'60%',marginBottom:8}}/><div className="skeleton" style={{height:24,width:'40%'}}/></div>)}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="card">
+      <div className="section-label">账户概览</div>
+      <div className="metric-grid">
+        <MetricPill label="总权益" value={`$${(summary?.total_equity || 0).toFixed(2)}`} sub="USDT 折算" />
+        <MetricPill label="现货余额" value={`${(summary?.spot_usdt || 0).toFixed(4)}`} sub="USDT" />
+        <MetricPill label="合约余额" value={`${(summary?.futures_usdt || 0).toFixed(4)}`} sub="USDT" />
+        <MetricPill label="持仓数" value={summary?.positions?.length || 0} sub="合约仓位" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Bot Stats Card ───
+function BotStatsCard({ stats, loading }) {
+  if (loading) {
+    return (
+      <div className="card">
+        <div className="section-label">Bot 统计</div>
+        <div style={{display:'flex',gap:24}}>
+          {[1,2,3,4].map(i => <div key={i} style={{flex:1}}><div className="skeleton" style={{height:36,width:'60%',marginBottom:8,margin:'0 auto'}}/><div className="skeleton" style={{height:12,width:'80%',margin:'0 auto'}}/></div>)}
+        </div>
+      </div>
+    );
+  }
+  const pnl = stats?.total_pnl || 0;
+  const pnlColor = pnl > 0 ? 'var(--positive)' : pnl < 0 ? 'var(--negative)' : 'var(--text-primary)';
+  return (
+    <div className="card">
+      <div className="section-label">Bot 统计</div>
+      <div style={{display:'flex',gap:24,flexWrap:'wrap'}}>
+        <div style={{flex:'1 1 80px',textAlign:'center'}}>
+          <div style={{fontSize:28,fontWeight:800,fontFamily:'var(--font-mono)',color:'var(--accent)'}}>{stats?.total_trades || 0}</div>
+          <div style={{fontSize:11,color:'var(--text-muted)',marginTop:4,textTransform:'uppercase',letterSpacing:'0.8px'}}>总交易</div>
+        </div>
+        <div style={{flex:'1 1 80px',textAlign:'center'}}>
+          <div style={{fontSize:28,fontWeight:800,fontFamily:'var(--font-mono)',color:'var(--positive)'}}>{stats?.win_rate != null ? (stats.win_rate*100).toFixed(1)+'%' : '-'}</div>
+          <div style={{fontSize:11,color:'var(--text-muted)',marginTop:4,textTransform:'uppercase',letterSpacing:'0.8px'}}>胜率</div>
+        </div>
+        <div style={{flex:'1 1 80px',textAlign:'center'}}>
+          <div style={{fontSize:28,fontWeight:800,fontFamily:'var(--font-mono)',color:pnlColor}}>{pnl >= 0 ? '+' : ''}{pnl.toFixed(4)}</div>
+          <div style={{fontSize:11,color:'var(--text-muted)',marginTop:4,textTransform:'uppercase',letterSpacing:'0.8px'}}>总盈亏</div>
+        </div>
+        <div style={{flex:'1 1 80px',textAlign:'center'}}>
+          <div style={{fontSize:28,fontWeight:800,fontFamily:'var(--font-mono)',color:'var(--text-primary)'}}>{stats?.positions?.length || 0}</div>
+          <div style={{fontSize:11,color:'var(--text-muted)',marginTop:4,textTransform:'uppercase',letterSpacing:'0.8px'}}>持仓</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Scanner Candidates Panel ───
+function ScannerPanel({ longCandidates, shortCandidates, loading, onSymbolClick }) {
+  const [tab, setTab] = useState('long');
+
+  if (loading) {
+    return (
+      <div className="card">
+        <div className="section-label">潜力币扫描</div>
+        <div style={{padding: 20, color: 'var(--text-muted)', fontSize: 13}}>扫描中...</div>
+      </div>
+    );
+  }
+
+  const candidates = tab === 'long' ? (longCandidates || []) : (shortCandidates || []);
+
+  return (
+    <div className="card">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+        <div className="section-label" style={{margin:0}}>潜力币扫描</div>
+        <div style={{fontSize:11,color:'var(--text-muted)',fontFamily:'var(--font-mono)'}}>
+          {candidates.length} 个候选
+        </div>
+      </div>
+      <div className="tabs">
+        <button className={`tab ${tab==='long'?'active':''}`} onClick={() => setTab('long')}>
+          📈 做多 {longCandidates?.length || 0}
+        </button>
+        <button className={`tab ${tab==='short'?'active':''}`} onClick={() => setTab('short')}>
+          📉 做空 {shortCandidates?.length || 0}
+        </button>
+      </div>
+      {candidates.length === 0 ? (
+        <div className="empty"><div className="empty-icon">🔍</div>暂无候选</div>
+      ) : (
+        candidates.slice(0, 8).map((c, i) => (
+          <div key={c.symbol} className="ticker-item" onClick={() => onSymbolClick && onSymbolClick(c.symbol)} style={{cursor:'pointer'}}>
+            <div className="ticker-item-left">
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <span style={{fontSize:11,color:'var(--text-muted)'}}>#{i+1}</span>
+                <span className="ticker-symbol">{c.symbol.replace('/USDT','')}</span>
+                {i < 3 && <span style={{fontSize:9,padding:'1px 4px',borderRadius:3,background:i===0?'#f0b90b33':i===1?'#6a7c8f33':'#cd7f3233',color:i===0?'#f0b90b':i===1?'#6a7c8f':'#cd7f32'}}>TOP</span>}
+              </div>
+              <div style={{fontSize:11,color:'var(--text-muted)',fontFamily:'var(--font-mono)'}}>
+                ${(c.volume_24h/1e6).toFixed(1)}M · {c.volume_ratio}x
+              </div>
+            </div>
+            <div style={{textAlign:'right'}}>
+              <div style={{fontSize:13,fontFamily:'var(--font-mono)',color: tab==='long'?'var(--positive)':'var(--negative)'}}>
+                {c.change_24h > 0 ? '+' : ''}{c.change_24h.toFixed(2)}%
+              </div>
+              <div style={{fontSize:11,color:'var(--positive)',fontFamily:'var(--font-mono)'}}>
+                {c.score.toFixed(1)}分
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+      <div style={{marginTop:8,fontSize:11,color:'var(--text-muted)',textAlign:'center'}}>
+        点击币种查看K线 · 数据来源 Bitget
+      </div>
+    </div>
+  );
+}
+
+// ─── Transfer Panel ───
+function TransferPanel({ onTransfer, transferring }) {
+  const [from, setFrom] = useState('SPOT');
+  const [to, setTo] = useState('USDT_FUTURE');
+  const [amount, setAmount] = useState('');
+
+  const handleSubmit = () => {
+    if (!amount || parseFloat(amount) <= 0) return;
+    onTransfer({ from, to, amount: parseFloat(amount) });
+  };
+
+  return (
+    <div>
+      <div className="form-field">
+        <label className="form-label">从账户</label>
+        <select className="form-select" value={from} onChange={e => setFrom(e.target.value)}>
+          <option value="SPOT">现货账户</option>
+          <option value="USDT_FUTURE">U本位合约</option>
+        </select>
+      </div>
+      <div className="form-field">
+        <label className="form-label">到账户</label>
+        <select className="form-select" value={to} onChange={e => setTo(e.target.value)}>
+          <option value="USDT_FUTURE">U本位合约</option>
+          <option value="SPOT">现货账户</option>
+        </select>
+      </div>
+      <div className="form-field">
+        <label className="form-label">金额 (USDT)</label>
+        <input
+          className="form-input"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="输入划转金额"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+        />
+      </div>
+      <button className="btn btn-primary btn-full" onClick={handleSubmit} disabled={transferring || !amount}>
+        {transferring ? '划转中...' : '确认划转'}
+      </button>
+    </div>
+  );
+}
+
+// ─── Balance Detail ───
+function BalancePanel({ assets, loading }) {
+  if (loading) return <div className="empty">加载中...</div>;
+  if (!assets || assets.length === 0) return <div className="empty"><div className="empty-icon">💰</div>暂无资产</div>;
+  return (
+    <div>
+      {assets.map(a => (
+        <div key={a.asset} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
+          <div>
+            <div className="asset-name">{a.asset}</div>
+            <div style={{fontSize:11,color:'var(--text-muted)',fontFamily:'var(--font-mono)',marginTop:2}}>
+              可用 {a.free.toFixed(6)} {a.locked > 0 ? `| 锁定 ${a.locked.toFixed(6)}` : ''}
+            </div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontWeight:600,fontFamily:'var(--font-mono)',fontSize:13}}>${a.usdt_value.toFixed(4)}</div>
+            <div style={{fontSize:11,color:'var(--text-muted)',fontFamily:'var(--font-mono)'}}>{a.total.toFixed(6)}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── KLine Chart ───
+function KLineChart({ symbol, timeframe, price, change, changePct }) {
+  const containerRef = useRef(null);
+  const chartRef = useRef(null);
+  const seriesRef = useRef(null);
+  const [tf, setTf] = useState(timeframe || '1h');
+  const timeframes = ['1m','5m','15m','1h','4h','1d'];
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+    container.innerHTML = '';
+
+    const chart = LightweightCharts.createChart(container, {
+      width: container.clientWidth,
+      height: 320,
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: '#8892B0',
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: 11,
+      },
+      grid: {
+        vertLines: { color: '#1E2442', style: 1 },
+        horzLines: { color: '#1E2442', style: 1 },
+      },
+      crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
+        vertLine: { color: '#6366F1', width: 1, style: 2, labelBackgroundColor: '#6366F1' },
+        horzLine: { color: '#6366F1', width: 1, style: 2, labelBackgroundColor: '#6366F1' },
+      },
+      rightPriceScale: { borderColor: '#1E2442' },
+      timeScale: {
+        borderColor: '#1E2442',
+        timeVisible: true,
+        secondsVisible: false,
+        tickMarkFormatter: (time) => {
+          const d = new Date(time * 1000);
+          return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
+        }
+      },
+    });
+
+    const candlestickSeries = chart.addCandlestickSeries({
+      upColor: '#10B981',
+      downColor: '#EF4444',
+      borderUpColor: '#10B981',
+      borderDownColor: '#EF4444',
+      wickUpColor: '#10B981',
+      wickDownColor: '#EF4444',
+    });
+
+    // Volume histogram
+    const volumeSeries = chart.addHistogramSeries({
+      color: '#6366F1',
+      priceFormat: { type: 'volume' },
+      priceScaleId: '',
+    });
+    volumeSeries.priceScale().applyOptions({
+      scaleMargins: { top: 0.85, bottom: 0 },
+    });
+
+    chartRef.current = chart;
+    seriesRef.current = { candle: candlestickSeries, volume: volumeSeries };
+
+    const handleResize = () => {
+      if (chart && container) {
+        chart.applyOptions({ width: container.clientWidth });
+      }
+    };
+    const ro = new ResizeObserver(handleResize);
+    ro.observe(container);
+
+    return () => {
+      ro.disconnect();
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+    };
+  }, [tf, symbol]);
+
+  // Fetch kline data when symbol or timeframe changes
+  useEffect(() => {
+    if (!seriesRef.current) return;
+    const fetchKlines = async () => {
+      try {
+        const resp = await fetch(`/market/klines?symbol=${symbol}&timeframe=${tf}&limit=200`);
+        const data = await resp.json();
+        if (data?.klines && data.klines.length > 0) {
+          const cdata = data.klines.map(k => ({
+            time: k.timestamp / 1000,
+            open: parseFloat(k.open),
+            high: parseFloat(k.high),
+            low: parseFloat(k.low),
+            close: parseFloat(k.close),
+          }));
+          const vdata = data.klines.map(k => ({
+            time: k.timestamp / 1000,
+            value: parseFloat(k.volume),
+            color: parseFloat(k.close) >= parseFloat(k.open) ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)',
+          }));
+          seriesRef.current.candle.setData(cdata);
+          seriesRef.current.volume.setData(vdata);
+          chartRef.current.timeScale().fitContent();
+        }
+      } catch (e) { console.error('kline fetch error', e); }
+    };
+    fetchKlines();
+    // Auto-refresh every 30s
+    const iv = setInterval(fetchKlines, 30000);
+    return () => clearInterval(iv);
+  }, [tf, symbol]);
+
+  const isUp = (changePct ?? 0) >= 0;
+  return (
+    <div className="chart-card">
+      <div className="chart-header">
+        <div className="chart-symbol-info">
+          <div>
+            <div className="chart-symbol-name">{symbol}</div>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginTop:2}}>
+              <span className="chart-price">{price || '—'}</span>
+              {changePct != null && (
+                <span className={`chart-change-badge ${isUp ? 'up' : 'down'}`}>
+                  {isUp ? '+' : ''}{changePct.toFixed(2)}%
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="chart-timeframe-tabs">
+          {timeframes.map(t => (
+            <button key={t} className={`tab ${tf===t?'active':''}`} onClick={() => setTf(t)}>{t}</button>
+          ))}
+        </div>
+      </div>
+      <div className="chart-container" ref={containerRef}></div>
+      <div className="chart-legend">
+        <span><div className="dot bullish"></div>上涨</span>
+        <span><div className="dot bearish"></div>下跌</span>
+        <span style={{marginLeft:'auto'}}>时间周期: {tf.toUpperCase()}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Strategy Signal Card ───
+function SignalCard({ symbol, signal, strength, price, factors }) {
+  const indicatorClass = signal === 'BUY' ? 'buy' : signal === 'SELL' ? 'sell' : 'hold';
+  const signalColor = signal === 'BUY' ? 'var(--positive)' : signal === 'SELL' ? 'var(--negative)' : 'var(--text-muted)';
+  const isUp = (factors?.ma?.signal || 0) >= 0;
+  return (
+    <div className="signal-card">
+      <div className="signal-row">
+        <div className={`signal-indicator ${indicatorClass}`}></div>
+        <div className="signal-meta">
+          <div className="signal-meta-item">
+            <div className="label">交易对</div>
+            <div className="val">{symbol}</div>
+          </div>
+          <div className="signal-meta-item">
+            <div className="label">信号</div>
+            <div className="val" style={{color: signalColor}}>{signal}</div>
+          </div>
+          <div className="signal-meta-item">
+            <div className="label">强度</div>
+            <div className="val">{strength != null ? Math.abs(strength).toFixed(3) : '—'}</div>
+          </div>
+          <div className="signal-meta-item">
+            <div className="label">价格</div>
+            <div className="val">{price || '—'}</div>
+          </div>
+        </div>
+      </div>
+      {factors && (
+        <div className="signal-factors">
+          <span className={`signal-factor ${(factors.ma?.signal || 0) >= 0 ? 'positive' : 'negative'}`}>
+            MA {(factors.ma?.signal || 0) >= 0 ? '多头' : '空头'}
+          </span>
+          <span className={`signal-factor ${(factors.funding_rate?.signal || 0) >= 0 ? 'positive' : 'negative'}`}>
+            资金费率 {(factors.funding_rate?.signal || 0) >= 0 ? '正' : '负'}
+          </span>
+          <span className={`signal-factor ${(factors.volume?.signal || 0) >= 0 ? 'positive' : 'negative'}`}>
+            成交量 {(factors.volume?.signal || 0) >= 0 ? '放量' : '缩量'}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Positions Table ───
+function PositionsPanel({ positions, loading }) {
+  if (loading) return <div className="empty">加载中...</div>;
+  if (!positions || positions.length === 0) return <div className="empty"><div className="empty-icon">📭</div>暂无持仓</div>;
+  return (
+    <div>
+      {positions.map((p, i) => {
+        const pnl = parseFloat(p.unrealized_pnl || 0);
+        const pnlColor = pnl > 0 ? 'var(--positive)' : pnl < 0 ? 'var(--negative)' : 'var(--text-primary)';
+        const pnlPct = p.pnl_pct ? parseFloat(p.pnl_pct) : 0;
+        const isProfit = pnl >= 0;
+        return (
+          <div key={i} style={{padding:'12px 0',borderBottom:'1px solid var(--border)'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <span className="asset-name">{p.symbol}</span>
+                <span className={`badge ${p.side==='LONG'?'badge-positive':p.side==='SHORT'?'badge-negative':'badge-neutral'}`}>{p.side}</span>
+              </div>
+              <div style={{fontFamily:'var(--font-mono)',fontWeight:600,color:pnlColor}}>
+                {pnl>=0?'+':''}{pnl.toFixed(4)} USDT
+              </div>
+            </div>
+            <div style={{display:'flex',gap:16,fontSize:12,color:'var(--text-secondary)',fontFamily:'var(--font-mono)'}}>
+              <span>数量 <span style={{color:'var(--text-primary)'}}>{p.size || p.quantity || 0}</span></span>
+              <span>开仓价 <span style={{color:'var(--text-primary)'}}>{p.entry_price || 0}</span></span>
+              <span>收益率 <span style={{color:pnlColor}}>{isProfit?'+':''}{pnlPct}%</span></span>
+            </div>
+            <div className="pnl-bar-wrap">
+              <div className="pnl-bar-label">
+                <span>盈亏进度</span>
+                <span style={{color:pnlColor}}>{isProfit?'+':''}{pnlPct}%</span>
+              </div>
+              <div className="pnl-bar-track">
+                <div className={`pnl-bar-fill ${isProfit?'positive':'negative'}`}
+                  style={{width: Math.min(Math.abs(parseFloat(pnlPct)), 100) + '%'}}></div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Trades Table ───
+function TradesPanel({ trades, loading }) {
+  if (loading) return <div className="empty">加载中...</div>;
+  if (!trades || trades.length === 0) return <div className="empty"><div className="empty-icon">📋</div>暂无成交记录</div>;
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead><tr>
+          <th>时间</th><th>交易对</th><th>方向</th><th>数量</th><th>价格</th>
+        </tr></thead>
+        <tbody>
+          {trades.slice(0,20).map((t,i) => (
+            <tr key={i}>
+              <td style={{fontFamily:'var(--font-mono)',fontSize:12,color:'var(--text-secondary)'}}>{new Date(t.time).toLocaleString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit',month:'2-digit',day:'2-digit'})}</td>
+              <td><span className="asset-name">{t.symbol}</span></td>
+              <td><span className={`badge ${t.side==='BUY'?'badge-positive':'badge-negative'}`}>{t.side}</span></td>
+              <td style={{fontFamily:'var(--font-mono)'}}>{t.quantity}</td>
+              <td style={{fontFamily:'var(--font-mono)'}}>{t.price}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── Tweaks Panel ───
+function TweaksPanel({ tweaks, update, reset }) {
+  const [open, setOpen] = useState(false);
+  const themes = [
+    { key: 'dark', label: '暗色' },
+    { key: 'light', label: '亮色' },
+    { key: 'amber', label: '琥珀' },
+  ];
+  const accents = [
+    { key: 'indigo', color: '#6366F1' },
+    { key: 'emerald', color: '#10B981' },
+    { key: 'rose', color: '#F43F5E' },
+    { key: 'amber', color: '#F59E0B' },
+    { key: 'cyan', color: '#06B6D4' },
+  ];
+
+  const applyTheme = (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    const accentMap = { dark: '#6366F1', light: '#4F46E5', amber: '#D97706' };
+    const accent = accentMap[theme] || '#6366F1';
+    document.documentElement.style.setProperty('--accent', accent);
+    document.documentElement.style.setProperty('--accent-dim', accent + '25');
+  };
+
+  const applyAccent = (color) => {
+    document.documentElement.style.setProperty('--accent', color);
+    document.documentElement.style.setProperty('--accent-dim', color + '25');
+  };
+
+  return (
+    <>
+      <button className="tweaks-toggle" onClick={() => setOpen(!open)} title="Tweaks">
+        {open ? '✕' : '⚙'}
+      </button>
+      <div className={`tweaks-panel ${open ? 'open' : ''}`}>
+        <div className="tweaks-title">
+          <span>Tweaks</span>
+          <button className="tweaks-close" onClick={() => setOpen(false)}>✕</button>
+        </div>
+        <div className="tweak-item">
+          <label>主题</label>
+          <div style={{display:'flex',gap:6}}>
+            {themes.map(t => (
+              <div
+                key={t.key}
+                style={{flex:1,padding:'7px 0',textAlign:'center',borderRadius:6,fontSize:12,cursor:'pointer',
+                  background: tweaks.theme===t.key ? 'var(--accent-dim)' : 'var(--bg-secondary)',
+                  color: tweaks.theme===t.key ? 'var(--accent)' : 'var(--text-secondary)',
+                  border:'1px solid '+(tweaks.theme===t.key?'var(--accent)':'var(--border)'),
+                }}
+                onClick={() => { update({ theme: t.key }); applyTheme(t.key); }}
+              >{t.label}</div>
+            ))}
+          </div>
+        </div>
+        <div className="tweak-item">
+          <label>强调色</label>
+          <div className="color-options">
+            {accents.map(a => (
+              <div
+                key={a.key}
+                className={`color-swatch ${tweaks.accentColor===a.color?'selected':''}`}
+                style={{ background: a.color }}
+                onClick={() => { update({ accentColor: a.color }); applyAccent(a.color); }}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="tweak-item">
+          <label>信息密度</label>
+          <div style={{display:'flex',gap:6}}>
+            {[['comfortable','宽松'],['normal','标准'],['compact','紧凑']].map(([k,v]) => (
+              <div
+                key={k}
+                style={{flex:1,padding:'6px 0',textAlign:'center',borderRadius:6,fontSize:12,cursor:'pointer',
+                  background: tweaks.density===k ? 'var(--accent-dim)' : 'var(--bg-secondary)',
+                  color: tweaks.density===k ? 'var(--accent)' : 'var(--text-secondary)',
+                  border:'1px solid '+(tweaks.density===k?'var(--accent)':'var(--border)'),
+                }}
+                onClick={() => update({ density: k })}
+              >{v}</div>
+            ))}
+          </div>
+        </div>
+        <button className="btn btn-secondary btn-full" style={{marginTop:8}} onClick={() => { reset(); applyTheme('dark'); }}>重置</button>
+      </div>
+    </>
+  );
+}
+
+// ─── Main App ───
+function App() {
+  const { tweaks, update, reset } = useTweaks();
+  const [toast, setToast] = useState(null);
+  const [loadingAccount, setLoadingAccount] = useState(true);
+  const [loadingMarket, setLoadingMarket] = useState(true);
+  const [summary, setSummary] = useState({});
+  const [stats, setStats] = useState({});
+  const [positions, setPositions] = useState([]);
+  const [trades, setTrades] = useState([]);
+  const [assets, setAssets] = useState([]);
+  const [overview, setOverview] = useState(null);
+  const [tickers, setTickers] = useState([]);
+  const [chartSymbol, setChartSymbol] = useState(SYMBOLS[0]);
+  const [signalData, setSignalData] = useState(null);
+  const [longCandidates, setLongCandidates] = useState([]);
+  const [shortCandidates, setShortCandidates] = useState([]);
+  const [loadingScanner, setLoadingScanner] = useState(false);
+  const [chartTicker, setChartTicker] = useState(null);
+  const [activeTab, setActiveTab] = useState('transfer');
+  const [transferring, setTransferring] = useState(false);
+
+  // Apply theme on load
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', tweaks.theme);
+    document.documentElement.style.setProperty('--accent', tweaks.accentColor);
+    document.documentElement.style.setProperty('--accent-dim', tweaks.accentColor + '25');
+  }, []);
+
+  const showToast = useCallback((msg, type='success') => {
+    setToast({ msg, type });
+  }, []);
+
+  const api = useCallback(async (path, opts = {}) => {
+    try {
+      const r = await fetch(path, opts);
+      return await r.json();
+    } catch (e) {
+      showToast('网络错误', 'error');
+      return null;
+    }
+  }, [showToast]);
+
+  const loadData = useCallback(async () => {
+    setLoadingAccount(true);
+    setLoadingMarket(true);
+    const [sum, stats, positions, mkt] = await Promise.all([
+      api('/account/summary'),
+      api('/api/stats'),
+      api('/api/positions'),
+      api('/market/overview'),
+    ]);
+    if (sum) {
+      setSummary(sum);
+      setAssets(sum.spot?.assets || []);
+    }
+    if (stats) {
+      setStats(stats);
+    }
+    if (positions) {
+      const raw = positions.positions || {};
+      setPositions(Array.isArray(raw) ? raw : Object.values(raw));
+    }
+    if (mkt) setOverview(mkt);
+    setLoadingAccount(false);
+
+    const t = await api('/market/tickers');
+    if (t && typeof t === 'object') {
+      const arr = Object.values(t).slice(0, 50).map(ti => ({
+        symbol: ti.symbol,
+        price: ti.last,
+        change: ti.change,
+        up: (ti.change ?? 0) >= 0,
+      }));
+      setTickers(arr);
+      // Update selected chart symbol ticker
+      const sel = arr.find(x => x.symbol === chartSymbol);
+      if (sel) setChartTicker(sel);
+    }
+    setLoadingMarket(false);
+
+    // Fetch all signals
+    const sigs = await api('/signals');
+    if (sigs?.signals && sigs.signals[chartSymbol]) {
+      setSignalData(sigs.signals[chartSymbol]);
+    }
+
+    const tr = await api('/account/trades');
+    if (tr?.trades) setTrades(tr.trades);
+
+    // Fetch scanner candidates
+    setLoadingScanner(true);
+    const [long, short] = await Promise.all([
+      api('/scanner/long-candidates?top_n=8'),
+      api('/scanner/short-candidates?top_n=8'),
+    ]);
+    if (long?.candidates) setLongCandidates(long.candidates);
+    if (short?.candidates) setShortCandidates(short.candidates);
+    setLoadingScanner(false);
+  }, [api, chartSymbol]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    const iv = setInterval(loadData, 120000);
+    return () => clearInterval(iv);
+  }, [loadData]);
+
+  const handleTransfer = async ({ from, to, amount }) => {
+    setTransferring(true);
+    // Map frontend labels to backend account types
+    const accountMap = { 'SPOT': 'spot', 'USDT_FUTURE': 'usdt_futures' };
+    const res = await api('/account/transfer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from_account: accountMap[from] || from, to_account: accountMap[to] || to, amount }),
+    });
+    setTransferring(false);
+    if (res?.success) {
+      showToast(`划转成功: ${amount} USDT`);
+      loadData();
+    } else {
+      showToast('划转失败: ' + (res?.error || '未知错误'), 'error');
+    }
+  };
+
+  const handleSymbolClick = (symbol) => {
+    // Support both "BTC/USDT" and "BTC" formats
+    const normalized = symbol.includes('/') ? symbol : `${symbol}/USDT`;
+    setChartSymbol(normalized);
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="header">
+        <div className="header-inner">
+          <div className="logo">
+            <div className="logo-mark">Q</div>
+            QuantBot
+          </div>
+          <div className="header-right">
+            <div className="live-badge">
+              <div className="live-dot"></div>
+              <span style={{fontSize:12,fontFamily:'var(--font-mono)',color:'var(--positive)'}}>LIVE</span>
+            </div>
+            <button className="btn btn-secondary" style={{padding:'6px 12px',fontSize:12}} onClick={loadData}>刷新</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="layout">
+        {/* Signal Bar */}
+        {signalData ? (
+          <SignalCard
+            symbol={signalData.symbol || chartSymbol}
+            signal={signalData.signal || 'HOLD'}
+            strength={signalData.strength}
+            price={chartTicker?.price || signalData.price}
+            factors={signalData.factors}
+          />
+        ) : (
+          <div className="signal-bar">
+            <div className="signal-dot hold"></div>
+            <div className="signal-text">
+              <span className="signal-sym">{chartSymbol}</span>
+              <span style={{color:'var(--text-muted)'}}>信号</span>
+              <span className="signal-strength" style={{marginLeft:8,color:'var(--text-muted)'}}>加载中...</span>
+            </div>
+          </div>
+        )}
+
+        {/* KLine Chart */}
+        <div style={{marginTop:24}}>
+          <KLineChart
+            symbol={chartSymbol}
+            timeframe="1h"
+            price={chartTicker?.price}
+            change={chartTicker?.change}
+            changePct={chartTicker?.change}
+          />
+        </div>
+
+        {/* Chart symbol selector */}
+        <div style={{marginTop:12,display:'flex',gap:6,flexWrap:'wrap'}}>
+          {SYMBOLS.map(s => (
+            <button key={s} className={`tab ${chartSymbol===s?'active':''}`}
+              onClick={() => setChartSymbol(s)}
+              style={{fontSize:12,padding:'5px 12px'}}
+            >{s}</button>
+          ))}
+        </div>
+
+        {/* Overview metrics */}
+        <div className="grid-2">
+          <AccountCard summary={summary} loading={loadingAccount} />
+          <BotStatsCard stats={stats} loading={loadingAccount} />
+        </div>
+
+        <ScannerPanel
+            longCandidates={longCandidates}
+            shortCandidates={shortCandidates}
+            loading={loadingScanner}
+            onSymbolClick={handleSymbolClick}
+          />
+
+        {/* Positions & Trades & Tools */}
+        <div className="grid-2 section-gap">
+          <div className="card">
+            <div className="section-label">当前持仓</div>
+            <PositionsPanel positions={positions} loading={loadingAccount} />
+          </div>
+          <div>
+            <div className="card" style={{marginBottom: 12}}>
+              <div className="section-label">最近成交</div>
+              <TradesPanel trades={trades} loading={loadingAccount} />
+            </div>
+            <div className="card">
+              <div className="section-label">快捷工具</div>
+              <div className="tabs">
+                {[['transfer','资金划转'],['balance','余额详情']].map(([k,v]) => (
+                  <button key={k} className={`tab ${activeTab===k?'active':''}`} onClick={() => setActiveTab(k)}>{v}</button>
+                ))}
+              </div>
+              {activeTab === 'transfer' ? (
+                <TransferPanel onTransfer={handleTransfer} transferring={transferring} />
+              ) : (
+                <BalancePanel assets={assets} loading={loadingAccount} />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <TweaksPanel tweaks={tweaks} update={update} reset={reset} />
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

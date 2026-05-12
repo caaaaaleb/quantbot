@@ -5,6 +5,7 @@ import pandas as pd
 from typing import Optional, Dict, Any
 from datetime import datetime
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from src.utils.logger import logger
 
@@ -78,19 +79,21 @@ class KlineFetcher:
     
     def get_latest_price(self) -> float:
         """
-        获取最新价格
-        
-        Returns:
-            float: 最新成交价
+        获取最新价格（带3秒超时）
         """
+        def _fetch():
+            return self.exchange.fetch_ticker(self.symbol)['last']
         try:
-            ticker = self.exchange.fetch_ticker(self.symbol)
-            price = ticker['last']
-            logger.debug(f"最新价格: {self.symbol} = {price}")
-            return price
-        except Exception as e:
-            logger.error(f"获取最新价格失败: {e}")
-            raise
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_fetch)
+                return future.result(timeout=3)
+        except Exception:
+            logger.warning(f"获取最新价格失败，回退到缓存: {self.symbol}")
+            # 遍历缓存查找最新 K 线数据
+            for key, (df_cached, _) in self.cache.items():
+                if isinstance(df_cached, pd.DataFrame) and 'close' in df_cached.columns:
+                    return df_cached['close'].iloc[-1]
+            return 0
     
     def get_ticker(self) -> Dict[str, Any]:
         """
@@ -128,7 +131,7 @@ class KlineFetcher:
         """
         return df['close'].rolling(window=period).mean()
     
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """清空缓存"""
         self.cache.clear()
         logger.info("缓存已清空")

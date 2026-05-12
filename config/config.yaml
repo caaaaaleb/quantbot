@@ -1,50 +1,113 @@
-# QuantBot 配置文件
+# QuantBot 配置文件 V2
 
 # 交易对配置（支持多交易对）
 trading:
   symbols:
-    - "BTC/USDT"
-    - "ETH/USDT"
-    - "SOL/USDT"
+    - "XAU/USDT:USDT"
+    - "TSLA/USDT:USDT"
+    - "UB/USDT:USDT"
+    - "PEPE/USDT:USDT"
+    - "MEME/USDT:USDT"
   timeframe: "1m"
   testnet: false
+  dry_run: false
 
-# 策略配置
+# 策略配置 V2
 strategy:
-  ma_short: 5
-  ma_long: 20
-  interval: 60  # 执行间隔（秒）
+  interval: 30  # 执行间隔（秒）
 
-  # 多因子权重
-  weights:
-    ma_signal: 0.5
-    funding_rate: 0.3
-    volume_spike: 0.2
+  # Regime 检测参数
+  regime:
+    adx_period: 14
+    adx_trend_threshold: 25.0    # ADX > 25 = 趋势市场
+    atr_low_threshold: 12.0        # ATR% < 12% = 低波动（meme币）
+    atr_high_threshold: 25.0       # ATR% > 25% = 高波动（meme币）
 
-# 风控配置
+  # 各策略参数
+  ma:
+    short_period: 5
+    long_period: 20
+  rsi:
+    period: 14
+    overbought: 70
+    oversold: 30
+  bollinger:
+    period: 20
+    std: 2.0
+  volume:
+    period: 20
+    spike_threshold: 2.0    # 2倍均量 = 放量
+    shrink_threshold: 0.5    # 0.5倍均量 = 缩量
+
+  # 策略权重（按市场状态动态调整）
+  # TREND: 顺势策略优先 (MA, 资金费率)
+  # SIDEWAYS: 均值回归优先 (RSI+BB, 成交量)
+  # HIGH_VOL: 轻仓观望 (成交量, MA)
+  regime_weights:
+    TREND:
+      ma: 0.6
+      funding: 0.2
+      rsi_bb: 0.05
+      volume: 0.15
+    SIDEWAYS:
+      ma: 0.1
+      funding: 0.1
+      rsi_bb: 0.5
+      volume: 0.3
+    HIGH_VOL:
+      ma: 0.25
+      funding: 0.1
+      rsi_bb: 0.25
+      volume: 0.4
+
+# 风控配置 V2
 risk:
-  max_position_size: 0.2   # 单笔最大仓位 20%
-  stop_loss: 0.02          # 止损 2%
-  take_profit: 0.05        # 止盈 5%
-  max_daily_loss: 0.1      # 单日最大亏损 10%
-  max_trades_per_day: 20   # 每日最大交易次数
-  max_positions: 3         # 最大持仓交易对数量
+  leverage: 10                 # 杠杆倍数（10x）
+  max_position_size: 0.33      # 单笔保证金占比 33%（×10x杠杆=330%名义敞口，3笔≈99%资金利用率）
+  stop_loss: 0.06              # 止损 6%
+  take_profit: 0.02            # 止盈 2%
+  tp_min_profit: 2.0           # 止盈最小绝对利润（$），扣手续费(~$0.28)后仍有净利
+  max_daily_loss: 0.25         # 单日最大亏损 25%
+  max_trades_per_day: 100      # 每日最大交易次数
+  max_positions: 3             # 最大持仓交易对数量
+
+  # 动态风控 V2
+  atr_stop_loss_enabled: true  # 启用 ATR 动态止损
+  atr_multiplier: 1.5          # ATR 止损倍数（止损 = entry ± ATR * 1.5）
+  atr_tp_multiplier: 3.0       # ATR 止盈倍数（止盈 = entry ± ATR * 3）
+  atr_tsl_multiplier: 1.5      # ATR 追踪止盈倍数（回撤触发 = 最高/最低 ± ATR * 1.5）
+  vol_adj_enabled: false       # 禁用波动率降仓（小资金需要集中火力）
+  consecutive_loss_limit: 3    # 连续亏损次数限制
+  consecutive_loss_reduction: 0.5  # 连续亏损后仓位缩减比例
+
+  # 分批止盈（已禁用，仅用固定止盈）
+  tp1_pct: 0.015
+  tp1_portion: 0                # 0 = 禁用
+  tp2_pct: 0.02
+  tp2_portion: 0                # 0 = 禁用
+  enable_trailing: false
+
+  # 时间退出（持仓超时+有利润 → 平仓释放资金）
+  time_exit_enabled: true       # 启用时间退出
+  time_exit_minutes: 30         # 持仓超 N 分钟
+  time_exit_min_profit: 0.01   # 盈利 ≥ 1% 时触发平仓
+
+  # 市场过滤器
+  news_pause_before_minutes: 30
+  news_pause_after_minutes: 30
+  atr_pause_threshold: 0.12    # ATR% > 12% 警告（meme币高波动）
+  atr_max_pct: 0.25             # ATR% > 25% 拒绝开仓（meme币高波动）
 
 # 数据配置
 data:
   kline_limit: 100
   cache_ttl: 30
-  ws_reconnect_interval: 5  # WebSocket重连间隔（秒）
+  ws_reconnect_interval: 5
 
 # WebSocket 配置
 websocket:
   enabled: true
   reconnect_interval: 5
-  # 多交易对流地址
-  streams:
-    btcusdt: "btcusdt@ticker"
-    ethusdt: "ethusdt@ticker"
-    solusdt: "solusdt@ticker"
 
 # 日志配置
 logging:
@@ -57,5 +120,70 @@ logging:
 backtest:
   start_date: "2025-01-01"
   end_date: "2025-12-31"
-  initial_capital: 10000  # 初始资金 USDT
-  commission: 0.001       # 手续费 0.1%
+  initial_capital: 10000
+  commission: 0.001
+
+# 新闻情绪配置
+sentiment:
+  enabled: true
+  cache_ttl: 300            # 情绪缓存时间（秒）
+  boost_threshold: 0.3      # 情绪分 > 0.3 增强做多信号
+  reduce_threshold: -0.3    # 情绪分 < -0.3 增强做空信号
+  weight: 0.15              # 情绪在最终信号中的权重
+
+# Scanner V2 配置
+scanner:
+  enabled: true
+  scan_interval: 30
+  auto_add: true               # 自动将 scanner 候选币加入交易
+  top_n: 20
+
+  # 信号引擎阈值（测试网调低成交量阈值）
+  momentum_1m: 0.005
+  momentum_5m: 0.02
+  volume_spike: 1.2            # 测试网成交量偏低，降低阈值
+  taker_buy_ratio: 0.6
+  breakout_threshold: 1.01
+
+  # 打分权重（测试网降成交量权重，动量为主）
+  w_momentum_5m: 0.40
+  w_momentum_1m: 0.25
+  w_volume_spike: 0.05          # 测试网成交量失真，大幅降权
+  w_taker_buy: 0.15
+  w_orderbook: 0.15
+
+  # 过滤（测试网放宽成交量限制）
+  min_volume: 0                  # 测试网成交量无意义，不限制
+  max_spread: 0.005              # 买卖价差上限
+  max_change_24h: 80.0       # 24h 涨跌幅上限
+  max_atr_pct: 0.10          # ATR% 上限（超过则拒绝开仓）
+
+  # 兼容旧字段（保留供外部参考）
+  min_volume_24h: 1000000
+  max_change_pct: 500.0
+  min_volume_ratio: 3.0
+
+# CoinMarketCap API 配置
+coinmarketcap:
+  enabled: true
+  api_key: "${CMC_API_KEY}"
+  cache_ttl: 60               # 缓存秒数
+  # CMC 增强特征权重（scanner 评分时）
+  cmc_weight_mcap: 0.10       # 市值规模权重
+  cmc_weight_vol: 0.10        # 成交量/流动性权重
+  cmc_weight_ath_dist: 0.05  # ATH 距离权重（超跌反弹）
+  # 过滤条件
+  min_cmc_rank: 200           # CMC 排名限制（0=不限制，>0=允许排名内）
+  min_market_cap: 0           # 最低市值（$）
+  max_mcap_ratio: 1.0         # MCap/FDV 上限（1.0=无限制）
+  # 新币发现
+  new_coin_max_age_days: 30   # 近N天新上线币
+
+# AI-Trader 信号桥接配置
+bridge:
+  enabled: true                 # 启用 AI-Trader 信号桥接（自评模式）
+  ai_trader_url: "http://localhost:8000"
+  api_key: ""
+  publish_signals: true         # QuantBot 推送信号到 AI-Trader
+  consume_signals: true         # QuantBot 消费 AI-Trader 的 agent 信号
+  external_weight: 0.15        # 外部信号在最终融合中的权重

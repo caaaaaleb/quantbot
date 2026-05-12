@@ -8,14 +8,20 @@ from pathlib import Path
 def setup_logger(log_file: str = "logs/quantbot.log", level: str = "INFO"):
     """
     配置日志系统
-    
+
     Args:
         log_file: 日志文件路径
         level: 日志级别 (DEBUG, INFO, WARNING, ERROR)
     """
     # 移除默认处理器
     logger.remove()
-    
+
+    # Windows GBK 终端无法输出 emoji，切换到 UTF-8
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     # 控制台输出（彩色）
     logger.add(
         sys.stdout,

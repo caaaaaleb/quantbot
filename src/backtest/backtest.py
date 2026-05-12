@@ -53,7 +53,9 @@ class Backtester:
         self,
         initial_capital: float = 10000,
         commission: float = 0.001,
-        slippage: float = 0.0005
+        slippage: float = 0.0005,
+        stop_loss_pct: float = 0.02,
+        take_profit_pct: float = 0.05
     ):
         """
         初始化回测引擎
@@ -67,6 +69,9 @@ class Backtester:
         self.commission = commission
         self.slippage = slippage
         
+        self.stop_loss_pct = stop_loss_pct
+        self.take_profit_pct = take_profit_pct
+
         self.capital = initial_capital
         self.position: Optional[Dict] = None
         self.trades: List[Trade] = []
@@ -89,7 +94,7 @@ class Backtester:
         if side == "buy":
             return price * (1 + self.slippage)
         else:
-            return price * (1 - self.slippageself)
+            return price * (1 - self.slippage)
     
     def _apply_commission(self, amount: float) -> float:
         """计算手续费"""
@@ -125,7 +130,7 @@ class Backtester:
             
             # 生成信号
             signal_result = strategy.generate_signal(current_df)
-            signal = signal_result['signal']
+            signal = signal_result.signal.value
             
             # 记录权益
             equity = self.capital
@@ -180,10 +185,10 @@ class Backtester:
                 else:
                     pnl_pct = (self.position['entry_price'] - current_price) / self.position['entry_price']
                 
-                if pnl_pct >= 0.05:  # 止盈5%
+                if pnl_pct >= self.take_profit_pct:  # 止盈
                     should_close = True
                     close_reason = "TAKE_PROFIT"
-                elif pnl_pct <= -0.02:  # 止损2%
+                elif pnl_pct <= -self.stop_loss_pct:  # 止损
                     should_close = True
                     close_reason = "STOP_LOSS"
                 
