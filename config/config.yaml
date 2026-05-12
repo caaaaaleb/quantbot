@@ -88,7 +88,7 @@ risk:
   enable_trailing: false
 
   # 时间退出（持仓超时+有利润 → 平仓释放资金）
-  time_exit_enabled: true       # 启用时间退出
+  time_exit_enabled: false      # 禁用时间退出
   time_exit_minutes: 30         # 持仓超 N 分钟
   time_exit_min_profit: 0.01   # 盈利 ≥ 1% 时触发平仓
 
