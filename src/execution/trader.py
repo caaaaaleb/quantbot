@@ -150,6 +150,24 @@ class Trader:
             pass
         return amount
 
+    def _order_params(
+        self,
+        position_side: str,
+        reduce_only: bool,
+        params: Optional[dict] = None
+    ) -> dict:
+        hold_side = position_side.lower()
+        order_params = {
+            'hedged': True,
+            'holdSide': hold_side,
+            'tradeSide': 'close' if reduce_only else 'open',
+        }
+        if reduce_only:
+            order_params['reduceOnly'] = True
+        if params:
+            order_params.update(params)
+        return order_params
+
     def market_buy(
         self,
         symbol: str,
@@ -187,7 +205,7 @@ class Trader:
             }
 
         # 名义价值检查
-        if price and quantity * price < self.min_notional:
+        if not reduce_only and price and quantity * price < self.min_notional:
             logger.warning(f"名义价值 ${quantity * price:.2f} 低于最低要求 ${self.min_notional}，跳过买入")
             return {'id': None, 'symbol': symbol, 'side': 'buy', 'amount': 0, 'price': price, 'status': 'failed'}
 
@@ -195,14 +213,14 @@ class Trader:
 
         try:
             amount = self._round_amount(symbol, quantity)
-            side_lower = position_side.lower()
+            order_params = self._order_params(position_side, reduce_only, params)
 
             if reduce_only:
-                # 使用 close_position，Classic API 正确使用 holdSide
                 order = self._execute_with_retry(
-                    self.exchange.close_position,
-                    symbol, side_lower,
-                    params={'hedged': True}
+                    self.exchange.create_market_buy_order,
+                    symbol=symbol,
+                    amount=amount,
+                    params=order_params
                 )
             else:
                 # 开仓：ccxt 默认逻辑正确
@@ -210,20 +228,20 @@ class Trader:
                     self.exchange.create_market_buy_order,
                     symbol=symbol,
                     amount=amount,
-                    params={'hedged': True, 'holdSide': position_side}
+                    params=order_params
                 )
 
             avg_price = order.get('average', order.get('price', price))
             filled = order.get('filled', order.get('amount', quantity)) or quantity
 
             logger.info(
-                f"✅ 买入成功 | 订单ID={order['id']} | "
+                f"✅ 买入成功 | 订单ID={order.get('id')} | "
                 f"成交数量={filled:.6f} | "
                 f"成交均价={avg_price}"
             )
 
             return {
-                'id': order['id'],
+                'id': order.get('id'),
                 'symbol': symbol,
                 'side': 'buy',
                 'amount': filled,
@@ -281,7 +299,7 @@ class Trader:
             }
 
         # 名义价值检查
-        if price and quantity * price < self.min_notional:
+        if not reduce_only and price and quantity * price < self.min_notional:
             logger.warning(f"名义价值 ${quantity * price:.2f} 低于最低要求 ${self.min_notional}，跳过卖出")
             return {'id': None, 'symbol': symbol, 'side': 'sell', 'amount': 0, 'price': price, 'status': 'failed'}
 
@@ -289,14 +307,14 @@ class Trader:
 
         try:
             amount = self._round_amount(symbol, quantity)
-            side_lower = position_side.lower()
+            order_params = self._order_params(position_side, reduce_only, params)
 
             if reduce_only:
-                # 使用 close_position，Classic API 正确使用 holdSide
                 order = self._execute_with_retry(
-                    self.exchange.close_position,
-                    symbol, side_lower,
-                    params={'hedged': True}
+                    self.exchange.create_market_sell_order,
+                    symbol=symbol,
+                    amount=amount,
+                    params=order_params
                 )
             else:
                 # 开仓：ccxt 默认逻辑正确
@@ -304,20 +322,20 @@ class Trader:
                     self.exchange.create_market_sell_order,
                     symbol=symbol,
                     amount=amount,
-                    params={'hedged': True, 'holdSide': position_side}
+                    params=order_params
                 )
 
             avg_price = order.get('average', order.get('price', price))
             filled = order.get('filled', order.get('amount', quantity)) or quantity
 
             logger.info(
-                f"✅ 卖出成功 | 订单ID={order['id']} | "
+                f"✅ 卖出成功 | 订单ID={order.get('id')} | "
                 f"成交数量={filled:.6f} | "
                 f"成交均价={avg_price}"
             )
 
             return {
-                'id': order['id'],
+                'id': order.get('id'),
                 'symbol': symbol,
                 'side': 'sell',
                 'amount': filled,

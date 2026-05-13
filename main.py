@@ -941,7 +941,54 @@ async def process_symbol(symbol: str) -> None:
                     'volume': float(row['volume'])
                 })
 
-        # MarketFilter: 新闻/波动率/布林带综合检查
+        # AuditLogger: 记录所有信号周期
+        audit_logger.log_signal(
+            symbol=symbol, signal=signal.value, strength=strength,
+            price=current_price, params=signal_result.metadata,
+            kline_snapshot=kline_snapshot, atr_pct=atr_pct,
+        )
+
+        pos_dict = risk_manager.get_position(symbol)
+
+        # 反向信号优先平仓；平仓不应被开仓过滤器或新开仓风控拦截。
+        if signal == Signal.BUY and pos_dict and "short" in pos_dict:
+            position = pos_dict["short"]
+            close_qty = position.quantity
+            order = traders[symbol].market_buy(symbol, close_qty, current_price, position_side="SHORT", reduce_only=True)
+            if order["status"] != "failed":
+                pnl = (position.entry_price - current_price) * close_qty
+                risk_manager.close_position(symbol, "short", current_price)
+                audit_logger.log_trade(TradeContext(
+                    symbol=symbol, signal=signal.value, signal_strength=strength,
+                    price=current_price, atr_pct=atr_pct,
+                    order_side="long", order_quantity=close_qty,
+                    order_result="FILLED", action="CLOSE",
+                    entry_price=position.entry_price, close_price=current_price,
+                    pnl=pnl, kline_snapshot=kline_snapshot,
+                ))
+            return
+
+        if signal == Signal.SELL and pos_dict and "long" in pos_dict:
+            position = pos_dict["long"]
+            close_qty = position.quantity
+            order = traders[symbol].market_sell(symbol, close_qty, current_price, position_side="LONG", reduce_only=True)
+            if order["status"] != "failed":
+                pnl = (current_price - position.entry_price) * close_qty
+                risk_manager.close_position(symbol, "long", current_price)
+                audit_logger.log_trade(TradeContext(
+                    symbol=symbol, signal=signal.value, signal_strength=strength,
+                    price=current_price, atr_pct=atr_pct,
+                    order_side="short", order_quantity=close_qty,
+                    order_result="FILLED", action="CLOSE",
+                    entry_price=position.entry_price, close_price=current_price,
+                    pnl=pnl, kline_snapshot=kline_snapshot,
+                ))
+            return
+
+        if signal == Signal.HOLD:
+            return
+
+        # MarketFilter: 新闻/波动率/布林带综合检查，仅用于新开仓。
         filter_check = market_filter.pre_trade_check(symbol)
         if not filter_check["allowed"]:
             logger.info(f"{symbol} MarketFilter 拦截: {'; '.join(filter_check['reasons'])}")
@@ -952,13 +999,6 @@ async def process_symbol(symbol: str) -> None:
                 risk_check=filter_check,
             )
             return
-
-        # AuditLogger: 记录所有信号周期
-        audit_logger.log_signal(
-            symbol=symbol, signal=signal.value, strength=strength,
-            price=current_price, params=signal_result.metadata,
-            kline_snapshot=kline_snapshot, atr_pct=atr_pct,
-        )
 
         balance_info = traders[symbol].get_balance("USDT")
         free_balance = balance_info["free"] if balance_info else 0
@@ -999,22 +1039,7 @@ async def process_symbol(symbol: str) -> None:
                 ))
 
         elif signal == Signal.SELL:
-            pos_dict = risk_manager.get_position(symbol)
-            if pos_dict and "long" in pos_dict:
-                position = pos_dict["long"]
-                order = traders[symbol].market_sell(symbol, position.quantity, current_price, position_side="LONG", reduce_only=True)
-                if order["status"] != "failed":
-                    pnl = (current_price - position.entry_price) * position.quantity
-                    risk_manager.close_position(symbol, "long", current_price)
-                    audit_logger.log_trade(TradeContext(
-                        symbol=symbol, signal=signal.value, signal_strength=strength,
-                        price=current_price, atr_pct=atr_pct,
-                        order_side="short", order_quantity=position.quantity,
-                        order_result="FILLED", action="CLOSE",
-                        entry_price=position.entry_price, close_price=current_price,
-                        pnl=pnl, kline_snapshot=kline_snapshot,
-                    ))
-            elif pos_dict and "short" in pos_dict:
+            if pos_dict and "short" in pos_dict:
                 logger.info(f"{symbol} 已有空头持仓，不再加仓")
             else:
                 order = traders[symbol].market_sell(symbol, quantity, current_price, position_side="SHORT")

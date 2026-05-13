@@ -103,8 +103,8 @@ class StrategyRouter:
         total_weight = 0.0
 
         for name, strategy in self.strategies.items():
-            # MA 策略需要 funding_rate，其他策略忽略
-            if name == 'ma' and funding_rate is not None:
+            # 资金费率同时传给综合 MA 因子和独立 funding 策略。
+            if name in ('ma', 'funding') and funding_rate is not None:
                 result = strategy.generate_signal(df, funding_rate=funding_rate)
             else:
                 result = strategy.generate_signal(df)
