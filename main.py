@@ -34,6 +34,8 @@ from src.scanner.scanner_service import ScannerService, ScannerConfig
 from src.backtest.backtest import Backtester
 from src.strategy.base import Signal
 from src.bridge.signal_bridge import SignalBridge
+from src.strategy.multi_timeframe import MultiTimeframeDetector, TrendResult, TrendDirection
+from src.strategy.position_pools import PositionPools, PoolConfig
 from src.utils.logger import setup_logger, logger
 
 load_dotenv()
@@ -77,6 +79,11 @@ def _sym(symbol: str) -> str:
     return symbol.split(":")[0] if ":" in symbol else symbol
 _ws_task: Optional[asyncio.Task] = None
 _scanner_task: Optional[asyncio.Task] = None
+# 三层仓位池
+_position_pools: Optional[PositionPools] = None
+_mtf_detector: Optional[MultiTimeframeDetector] = None
+_pools_enabled: bool = False
+_mtf_enabled: bool = False
 
 
 # ────────────────────────────────────────────────────────────────
@@ -248,6 +255,37 @@ async def lifespan(app: FastAPI):
     if not bridge_cfg.get("enabled", False):
         signal_bridge.enabled = False
         logger.info("SignalBridge: 未启用（bridge.enabled=false）")
+
+    # ── 三层仓位池 + 多时间框架 ──────────────────────────────────
+    global _position_pools, _mtf_detector, _pools_enabled, _mtf_enabled
+    _pools_enabled = cfg.get("pools", {}).get("enabled", False)
+    _mtf_enabled = cfg.get("multi_timeframe", {}).get("enabled", False)
+    if _pools_enabled:
+        mtf_cfg = cfg.get("multi_timeframe", {})
+        pool_cfg_raw = cfg.get("pools", {})
+        pool_cfg = PoolConfig(
+            base_size_usd=pool_cfg_raw.get("base_size_usd", 50.0),
+            max_trend_layers=pool_cfg_raw.get("max_trend_layers", 5),
+            spacing_pct=pool_cfg_raw.get("spacing_pct", 0.55),
+            locked_profit_trigger=pool_cfg_raw.get("locked_profit_trigger", 1.0),
+            locked_trail_pullback=pool_cfg_raw.get("locked_trail_pullback", 0.3),
+            reserved_threshold=pool_cfg_raw.get("reserved_threshold", 3.0),
+            seal_team_trigger_pct=pool_cfg_raw.get("seal_team_trigger_pct", 3.0),
+            enable_seal_team=pool_cfg_raw.get("enable_seal_team", True),
+            enable_pyramid=pool_cfg_raw.get("enable_pyramid", True),
+        )
+        _mtf_detector = MultiTimeframeDetector(
+            has_period=mtf_cfg.get("has_period", 6),
+            macd_fast=mtf_cfg.get("macd_fast", 12),
+            macd_slow=mtf_cfg.get("macd_slow", 26),
+            macd_signal=mtf_cfg.get("macd_signal", 9),
+            tube_bars=mtf_cfg.get("tube_bars", 5),
+            tube_breakout_pct=mtf_cfg.get("tube_breakout_pct", 3.0),
+        )
+        _position_pools = PositionPools(pool_cfg, risk_manager, None)
+        logger.info("🏊 三层仓位池已启用")
+    else:
+        logger.info("🏊 三层仓位池未启用（pools.enabled=false）")
 
     if cfg["websocket"]["enabled"]:
         ws_client = MultiWebSocket(SYMBOLS)
@@ -477,6 +515,33 @@ async def get_balance():
 @app.get("/api/stats")
 async def get_stats():
     return risk_manager.get_stats()
+
+
+@app.get("/api/pools")
+async def get_pools():
+    """三层仓位池状态"""
+    if not _position_pools:
+        return {"enabled": False}
+    summary = _position_pools.get_pool_summary()
+    positions = {}
+    for sym, pos_list in _position_pools.get_all_positions().items():
+        ws_key = sym.replace("/", "").upper()
+        price = ws_client.get_price(ws_key) if ws_client else 0
+        positions[sym] = {
+            "price": price,
+            "positions": [
+                {
+                    "side": p.side, "layer": p.layer, "pool": p.pool,
+                    "entry": round(p.entry_price, 6),
+                    "qty": round(p.quantity, 6),
+                    "pnl_pct": round(p.pnl_pct(price) * 100, 2) if price else 0,
+                    "trail_active": p.trail_active,
+                }
+                for p in pos_list
+            ],
+            "exposure": _position_pools.get_total_exposure(sym, price) if price else {},
+        }
+    return {"enabled": True, "summary": summary, "positions": positions}
 
 
 @app.get("/api/backtest")
@@ -823,6 +888,139 @@ async def run_strategy_once() -> None:
     logger.info("=" * 60)
 
 
+async def _evaluate_pools(symbol: str, df_1m, current_price: float, atr: float, atr_pct: float) -> None:
+    """三层仓位池评估：多时间框架趋势 + 仓位池操作"""
+    try:
+        # 拉取多时间框架 K 线
+        loop = asyncio.get_running_loop()
+        df_m30 = await loop.run_in_executor(
+            None, lambda: kline_fetchers[symbol].fetch_klines(timeframe="30m", limit=80)
+        )
+        df_m5 = await loop.run_in_executor(
+            None, lambda: kline_fetchers[symbol].fetch_klines(timeframe="5m", limit=80)
+        )
+
+        if len(df_m30) < 30 or len(df_m5) < 30:
+            return
+
+        # 多时间框架趋势检测
+        trend = _mtf_detector.detect(df_m30, df_m5, df_1m)
+
+        logger.debug(
+            f"🏊 {symbol} 多TF: 大={trend.big_trend.value}({'稳' if trend.big_stable else '弱'}) "
+            f"小={trend.small_trend.value}({'震' if trend.small_oscillating else '顺'}) "
+            f"HAS大={trend.big_has_color} HAS小={trend.small_has_color} "
+            f"管壁={'突破' + trend.tube_breakout_direction.value if trend.tube_breakout else '正常'}"
+        )
+
+        # 获取余额
+        balance_info = traders[symbol].get_balance("USDT")
+        free_balance = balance_info["free"] if balance_info else 0
+
+        # 仓库位池评估
+        pool_actions = _position_pools.evaluate(symbol, trend, current_price, free_balance)
+
+        if not pool_actions:
+            return
+
+        logger.info(f"🏊 {symbol} 仓位池操作: {len(pool_actions)} 条")
+
+        for action in pool_actions:
+            act = action['action']
+            side = action['side']
+            qty = action.get('quantity', 0)
+            reason = action.get('reason', '')
+
+            if act == 'CLOSE_LOCKED':
+                # 锁定仓追踪止盈平仓
+                pos = action['position']
+                logger.info(f"  🔓 {symbol} 锁定仓平仓 L{pos.layer} {side}: {reason}")
+                if side == 'long':
+                    order = traders[symbol].market_sell(symbol, qty, current_price, position_side="LONG", reduce_only=True)
+                else:
+                    order = traders[symbol].market_buy(symbol, qty, current_price, position_side="SHORT", reduce_only=True)
+                if order.get("status") != "failed":
+                    _position_pools.remove_locked_position(symbol, pos)
+                    pnl = pos.unrealized_pnl(current_price)
+                    _position_pools.closed_pnl += pnl
+                    _position_pools.total_closed += 1
+                    # 同步 RiskManager
+                    risk_manager.close_position(symbol, side, current_price)
+                    logger.info(f"    ✅ 锁定仓平仓完成 PnL=${pnl:+.4f}")
+
+            elif act == 'OPEN_TREND':
+                # 金字塔趋势加仓
+                layer = action.get('layer', 0)
+                if qty <= 0:
+                    continue
+                # 风控检查（pool_mode=True 允许同向金字塔加仓）
+                check = risk_manager.check_trade_allowed(
+                    symbol=symbol, balance=free_balance, price=current_price,
+                    signal="BUY" if side == 'long' else "SELL",
+                    regime=trend.big_trend.value, atr=atr, atr_pct=atr_pct,
+                    pool_mode=True,
+                )
+                if not check.get("allowed"):
+                    logger.info(f"  ⛔ {symbol} L{layer} 风控拦截: {check.get('reason')}")
+                    continue
+                # 执行开仓
+                if side == 'long':
+                    order = traders[symbol].market_buy(symbol, qty, current_price)
+                else:
+                    order = traders[symbol].market_sell(symbol, qty, current_price, position_side="SHORT")
+                if order.get("status") != "failed":
+                    fill_price = order.get("average") or order.get("price") or current_price
+                    fill_qty = order.get("filled") or order.get("amount") or qty
+                    # 记录到池
+                    _position_pools.add_trend_position(symbol, side, fill_price, fill_qty)
+                    # 同步 RiskManager
+                    risk_manager.open_position(symbol=symbol, side=side, entry_price=fill_price, quantity=fill_qty)
+                    logger.info(f"    ✅ L{layer} 开仓完成 价={fill_price:.8g} 量={fill_qty:.6f}")
+                else:
+                    logger.warning(f"    ❌ L{layer} 开仓失败: {order.get('error', 'unknown')}")
+
+            elif act == 'SEAL_TEAM':
+                # 海豹突击队
+                if qty <= 0:
+                    continue
+                logger.warning(f"  🦭 {symbol} 海豹突击队 {side}: {reason} | 量={qty:.4f}")
+                if side == 'long':
+                    order = traders[symbol].market_buy(symbol, qty, current_price)
+                else:
+                    order = traders[symbol].market_sell(symbol, qty, current_price, position_side="SHORT")
+                if order.get("status") != "failed":
+                    fill_price = order.get("average") or order.get("price") or current_price
+                    fill_qty = order.get("filled") or order.get("amount") or qty
+                    _position_pools.add_seal_position(symbol, side, fill_price, fill_qty)
+                    risk_manager.open_position(symbol=symbol, side=side, entry_price=fill_price, quantity=fill_qty)
+                    logger.warning(f"    ✅ 海豹入场 价={fill_price:.8g} 量={fill_qty:.4f}")
+
+            elif act == 'CLOSE_TREND':
+                # 趋势仓减仓（小趋势震荡时盈利单平仓）
+                pos = action.get('position')
+                if pos is None:
+                    continue
+                logger.info(f"  📉 {symbol} 趋势减仓 L{pos.layer} {side}: {reason}")
+                if side == 'long':
+                    order = traders[symbol].market_sell(symbol, qty, current_price, position_side="LONG", reduce_only=True)
+                else:
+                    order = traders[symbol].market_buy(symbol, qty, current_price, position_side="SHORT", reduce_only=True)
+                if order.get("status") != "failed":
+                    # 从趋势池移除
+                    if symbol in _position_pools.trend and pos in _position_pools.trend[symbol]:
+                        _position_pools.trend[symbol].remove(pos)
+                        if not _position_pools.trend[symbol]:
+                            del _position_pools.trend[symbol]
+                    pnl = pos.unrealized_pnl(current_price)
+                    _position_pools.closed_pnl += pnl
+                    _position_pools.total_closed += 1
+                    risk_manager.close_position(symbol, side, current_price)
+                    logger.info(f"    ✅ 趋势减仓完成 PnL=${pnl:+.4f}")
+
+    except Exception as e:
+        logger.error(f"🏊 {symbol} 仓位池评估异常: {e}\n{traceback.format_exc()}")
+
+
 async def process_symbol(symbol: str) -> None:
     try:
         # 懒加载：如果 symbol 未初始化，先创建
@@ -891,6 +1089,10 @@ async def process_symbol(symbol: str) -> None:
                     if order2["status"] != "failed":
                         risk_manager.close_position(symbol, side, current_price)
             return
+
+        # ── 三层仓位池评估 ──────────────────────────────────────────
+        if _pools_enabled and _position_pools and _mtf_detector:
+            await _evaluate_pools(symbol, df, current_price, atr, atr_pct)
 
         # 获取资金费率
         funding_rate = None

@@ -160,6 +160,7 @@ class RiskManager:
         regime: str = "unknown",
         atr: float = 0.0,
         atr_pct: float = 0.0,
+        pool_mode: bool = False,    # 仓位池模式：允许同向加仓（金字塔）
     ) -> Dict[str, Any]:
         """
         检查是否允许交易
@@ -229,11 +230,13 @@ class RiskManager:
             quantity = reduced_qty
 
         # 持仓方向检查（对冲模式：同币可同时有多空）
-        pos_dict = self.positions.get(symbol, {})
-        if signal == Signal.BUY and "long" in pos_dict:
-            return {'allowed': False, 'reason': '已有多头持仓，不再加仓', 'size': 0}
-        if signal == Signal.SELL and "short" in pos_dict:
-            return {'allowed': False, 'reason': '已有空头持仓，不再加仓', 'size': 0}
+        # pool_mode=True 允许同向金字塔加仓
+        if not pool_mode:
+            pos_dict = self.positions.get(symbol, {})
+            if signal == Signal.BUY and "long" in pos_dict:
+                return {'allowed': False, 'reason': '已有多头持仓，不再加仓', 'size': 0}
+            if signal == Signal.SELL and "short" in pos_dict:
+                return {'allowed': False, 'reason': '已有空头持仓，不再加仓', 'size': 0}
 
         logger.info(
             f"交易允许: {signal} {symbol} | "

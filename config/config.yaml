@@ -179,6 +179,29 @@ coinmarketcap:
   # 新币发现
   new_coin_max_age_days: 30   # 近N天新上线币
 
+# 三层仓位池配置 (Nerve-Knife 策略核心)
+pools:
+  enabled: true                   # 启用仓位池系统
+  base_size_usd: 15.0             # 基础开仓金额 ($)，金字塔起点 L0
+  max_trend_layers: 5             # 最大金字塔层数 (L0-L4, L5=海豹)
+  spacing_pct: 0.55               # 加仓最小间距 (%)
+  locked_profit_trigger: 1.0      # 锁定仓启动追踪盈利阈值 (%)
+  locked_trail_pullback: 0.3      # 锁定仓追踪回撤平仓 (%)
+  reserved_threshold: 3.0         # 保留仓价差阈值 (%)
+  seal_team_trigger_pct: 3.0      # 海豹突击队管壁突破触发 (%)
+  enable_seal_team: true          # 启用海豹突击队
+  enable_pyramid: true            # 启用金字塔加仓
+
+# 多时间框架配置
+multi_timeframe:
+  enabled: true                   # 启用多时间框架
+  has_period: 6                   # HAS 平滑周期
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  tube_bars: 5                    # 管壁 K 线数
+  tube_breakout_pct: 3.0          # 管壁突破阈值 (%)
+
 # AI-Trader 信号桥接配置
 bridge:
   enabled: true                 # 启用 AI-Trader 信号桥接（自评模式）
