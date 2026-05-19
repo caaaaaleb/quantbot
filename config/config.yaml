@@ -12,6 +12,13 @@ trading:
   testnet: false
   dry_run: false
 
+# 订单执行配置
+execution:
+  # maker = 入场使用 post-only 限价挂单；止损/平仓仍使用市价保护风险
+  entry_order_type: "maker"
+  maker_offset_bps: 2.0
+  min_entry_interval_seconds: 300
+
 # 策略配置 V2
 strategy:
   interval: 30  # 执行间隔（秒）

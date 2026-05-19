@@ -159,7 +159,8 @@ class MultiTimeframeDetector:
 
         Returns:
             (TrendDirection, has_color, oscillating)
-            oscillating=True 表示 HAS 与 MACD 反向 → 震荡期，应减仓
+            oscillating=True 表示 HAS 与 MACD 持续反向 → 震荡期，应减仓
+            需要最近 3 根 K 线中 ≥2 根不一致才判定震荡（避免单根噪音）
         """
         if len(df_m5) < self.macd_slow + 5:
             return TrendDirection.WEAK, "", True
@@ -174,16 +175,25 @@ class MultiTimeframeDetector:
         # HAS 与 MACD 是否一致
         has_up = cur_has_color == 'green'
         macd_up = cur_macd_above_signal
-        oscillating = has_up != macd_up
+
+        # 震荡判断：最近 3 根 K 线中 ≥2 根 HAS/MACD 不一致 → 确认震荡
+        osc_count = 0
+        lookback = min(3, len(has) - 1)
+        for i in range(-1, -lookback - 1, -1):
+            h_up = has['color'].iloc[i] == 'green'
+            m_up = macd_data['histogram'].iloc[i] > 0
+            if h_up != m_up:
+                osc_count += 1
+        oscillating = osc_count >= 2
 
         if has_up and macd_up:
-            return TrendDirection.UP, cur_has_color, False
+            return TrendDirection.UP, cur_has_color, oscillating
         elif (not has_up) and (not macd_up):
-            return TrendDirection.DOWN, cur_has_color, False
+            return TrendDirection.DOWN, cur_has_color, oscillating
         elif has_up and not macd_up:
-            return TrendDirection.UP, cur_has_color, True  # 弱上升
+            return TrendDirection.UP, cur_has_color, True  # 当前不一致 → 弱
         else:
-            return TrendDirection.DOWN, cur_has_color, True  # 弱下降
+            return TrendDirection.DOWN, cur_has_color, True  # 当前不一致 → 弱
 
     # ── 管壁突破检测 (M1) ─────────────────────────────────────────
 

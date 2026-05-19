@@ -1,4 +1,4 @@
-"""风控模块"""
+﻿"""风控模块"""
 
 from typing import Dict, Any, Optional
 from dataclasses import dataclass, field
@@ -128,6 +128,7 @@ class RiskManager:
         self.exchange = exchange
         self._consecutive_losses = 0
         self._daily_initial_balance: Optional[float] = None
+        self._last_hedged_unlock_time: float = 0.0  # 双向解锁冷却计时
         # positions: symbol -> {side: Position}（支持同一币多空双向持仓）
         self.positions: Dict[str, Dict[str, Position]] = {}
         self.stats = RiskStats()
@@ -249,7 +250,7 @@ class RiskManager:
             'size': quantity,
             'amount': max_amount
         }
-    
+
     def check_stop_loss_take_profit(
         self,
         symbol: str,
@@ -270,25 +271,44 @@ class RiskManager:
 
         triggered = []
 
-        # ── 双向仓位解锁：满仓时释放同币双向持仓中较差的一边 ──
+        # ── 双向仓位解锁（带严格条件，避免胡乱平仓）──
+        # 条件：1) 同币多空双持 2) 总仓位已满 3) 持仓 ≥15min 4) 冷却 ≥10min
         if len(pos_dict) == 2 and self.get_total_position_count() >= self.max_positions:
             long_pos = pos_dict.get("long")
             short_pos = pos_dict.get("short")
             if long_pos and short_pos:
-                long_pnl = long_pos.pnl_pct(current_price)
-                short_pnl = short_pos.pnl_pct(current_price)
-                if long_pnl >= short_pnl:
-                    logger.warning(
-                        f"🔓 双向解锁 {symbol}: 平空头(盈亏={short_pnl*100:.2f}%) 保留多头(盈亏={long_pnl*100:.2f}%) | "
-                        f"总仓位={self.get_total_position_count()}/{self.max_positions}"
-                    )
-                    triggered.append({"action": "TIME_EXIT", "side": "short", "position": short_pos, "close_qty": short_pos.quantity})
-                else:
-                    logger.warning(
-                        f"🔓 双向解锁 {symbol}: 平多头(盈亏={long_pnl*100:.2f}%) 保留空头(盈亏={short_pnl*100:.2f}%) | "
-                        f"总仓位={self.get_total_position_count()}/{self.max_positions}"
-                    )
-                    triggered.append({"action": "TIME_EXIT", "side": "long", "position": long_pos, "close_qty": long_pos.quantity})
+                now_ts = datetime.now().timestamp()
+                cooldown_ok = (now_ts - self._last_hedged_unlock_time) >= 600  # 10 分钟冷却
+                if cooldown_ok:
+                    # 检查持仓时长（两边都需 ≥15 分钟才考虑解锁）
+                    long_held = short_held = False
+                    try:
+                        long_dt = datetime.strptime(long_pos.entry_time, "%Y-%m-%d %H:%M:%S")
+                        short_dt = datetime.strptime(short_pos.entry_time, "%Y-%m-%d %H:%M:%S")
+                        long_held = (datetime.now() - long_dt).total_seconds() >= 900  # 15 min
+                        short_held = (datetime.now() - short_dt).total_seconds() >= 900
+                    except (ValueError, TypeError):
+                        pass
+                    if long_held and short_held:
+                        long_pnl = long_pos.pnl_pct(current_price)
+                        short_pnl = short_pos.pnl_pct(current_price)
+                        # 只在盈亏差距明显时解锁（>0.5%），避免 break-even 附近反复触发
+                        if abs(long_pnl - short_pnl) > 0.005:
+                            if long_pnl >= short_pnl:
+                                logger.warning(
+                                    f"🔓 双向解锁 {symbol}: 平空头(盈亏={short_pnl*100:.2f}%) "
+                                    f"保留多头(盈亏={long_pnl*100:.2f}%) | "
+                                    f"总仓位={self.get_total_position_count()}/{self.max_positions}"
+                                )
+                                triggered.append({"action": "UNLOCK_HEDGED", "side": "short", "position": short_pos, "close_qty": short_pos.quantity})
+                            else:
+                                logger.warning(
+                                    f"🔓 双向解锁 {symbol}: 平多头(盈亏={long_pnl*100:.2f}%) "
+                                    f"保留空头(盈亏={short_pnl*100:.2f}%) | "
+                                    f"总仓位={self.get_total_position_count()}/{self.max_positions}"
+                                )
+                                triggered.append({"action": "UNLOCK_HEDGED", "side": "long", "position": long_pos, "close_qty": long_pos.quantity})
+                            self._last_hedged_unlock_time = now_ts
 
         for side, position in list(pos_dict.items()):
             pnl_pct = position.pnl_pct(current_price)
@@ -546,17 +566,38 @@ class RiskManager:
     
     def sync_from_exchange(self, exchange, symbols: list):
         """
-        从交易所同步现有持仓（启动时调用）
+        从交易所同步现有持仓（每轮策略执行前调用）
 
         Args:
             exchange: ccxt exchange 实例
-            symbols: 交易对列表
+            symbols: 交易对列表（可能混合 "UB/USDT" 和 "UB/USDT:USDT" 两种格式）
         """
         if not exchange:
             logger.warning("sync_from_exchange: 无 exchange 实例")
             return
 
-        # 先从交易所拉所有活跃持仓的 symbol 集合
+        # ── 辅助：统一 Bitget 合约格式 BASE/QUOTE:QUOTE ──
+        def _ensure_swap(s: str) -> str:
+            return s if ":" in s else f"{s}:USDT"
+
+        # ── Step 0: 迁移旧 key（无 :USDT）→ 新 key（有 :USDT）──
+        for old_key in list(self.positions.keys()):
+            new_key = _ensure_swap(old_key)
+            if new_key != old_key:
+                if new_key in self.positions:
+                    # 两把 key 指向同一币 → 合并
+                    for side, pos in self.positions[old_key].items():
+                        if side not in self.positions[new_key]:
+                            self.positions[new_key][side] = pos
+                    logger.warning(f"sync: 合并重复key {old_key} → {new_key}")
+                else:
+                    self.positions[new_key] = self.positions.pop(old_key)
+                    logger.debug(f"sync: 迁移key {old_key} → {new_key}")
+
+        # 标准化传入 symbols，去重
+        norm_symbols = list(dict.fromkeys(_ensure_swap(s) for s in symbols))
+
+        # ── Step 1: 获取交易所活跃持仓集合 ──
         active_exchange_symbols = set()
         try:
             all_pos = exchange.fetch_positions()
@@ -567,12 +608,14 @@ class RiskManager:
         except Exception as e:
             logger.warning(f"获取交易所全部持仓失败: {e}")
 
-        # 清理这些 symbol 的旧仓位（如果交易所已经没有这个方向的持仓）
-        for sym in symbols:
-            if sym in self.positions and sym not in active_exchange_symbols:
+        # ── Step 2: 清理交易所已不存在的持仓 ──
+        for sym in list(self.positions.keys()):
+            if sym not in active_exchange_symbols:
+                logger.info(f"sync: 交易所已无 {sym} 持仓，清理本地记录")
                 del self.positions[sym]
 
-        for symbol in symbols:
+        # ── Step 3: 逐币同步 ──
+        for symbol in norm_symbols:
             try:
                 # 获取合约信息
                 position_info = exchange.fetch_positions([symbol])
@@ -585,6 +628,10 @@ class RiskManager:
                     entry_price = float(pos.get('entryPrice', 0) or 0)
                     quantity = float(pos.get('contracts', 0) or 0)
                     if entry_price <= 0 or quantity <= 0:
+                        continue
+
+                    # 已在本地跟踪 → 跳过（保留 highest/lowest 追踪状态）
+                    if symbol in self.positions and side in self.positions[symbol]:
                         continue
 
                     # 计算 ATR

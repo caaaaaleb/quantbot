@@ -77,6 +77,15 @@ _strategy_task: Optional[asyncio.Task] = None
 def _sym(symbol: str) -> str:
     """标准化交易对格式：UB/USDT:USDT -> UB/USDT"""
     return symbol.split(":")[0] if ":" in symbol else symbol
+
+
+def _norm(symbol: str) -> str:
+    """确保 Bitget 合约格式: BASE/QUOTE:QUOTE（补全 :USDT 后缀）"""
+    if ":" in symbol:
+        return symbol
+    return f"{symbol}:USDT"
+
+
 _ws_task: Optional[asyncio.Task] = None
 _scanner_task: Optional[asyncio.Task] = None
 # 三层仓位池
@@ -191,7 +200,14 @@ async def lifespan(app: FastAPI):
             ma_short=cfg["strategy"]["ma"]["short_period"],
             ma_long=cfg["strategy"]["ma"]["long_period"],
         )
-        traders[symbol] = Trader(exchange=exchange, max_retries=3, retry_delay=1.0)
+        exec_cfg = cfg.get("execution", {})
+        traders[symbol] = Trader(
+            exchange=exchange,
+            max_retries=3,
+            retry_delay=1.0,
+            entry_order_type=exec_cfg.get("entry_order_type", "market"),
+            maker_offset_bps=exec_cfg.get("maker_offset_bps", 2.0),
+        )
         traders[symbol].set_dry_run(DRY_RUN)
         routers[symbol] = StrategyRouter(
             enable_regime_detection=True,
@@ -227,6 +243,7 @@ async def lifespan(app: FastAPI):
         vol_threshold=cfg["risk"].get("vol_threshold", 0.03),
         atr_pause_threshold=cfg["risk"].get("atr_pause_threshold", 0.12),
         atr_max_pct=cfg["risk"].get("atr_max_pct", 0.25),
+        min_entry_interval_seconds=cfg.get("execution", {}).get("min_entry_interval_seconds", 300),
     )
 
     backtester = Backtester(
@@ -323,7 +340,7 @@ async def lifespan(app: FastAPI):
                 global _scanner_cache, SYMBOLS
                 _scanner_cache = {"results": candidates, "timestamp": time.time()}
                 blacklist = set(cfg["trading"].get("blacklist", []))
-                new_symbols = [c.symbol for c in candidates if c.symbol not in blacklist]
+                new_symbols = [_norm(c.symbol) for c in candidates if c.symbol not in blacklist]
                 if new_symbols:
                     logger.info(f"🔄 Scanner 预热完成: {len(new_symbols)} 个币 → {new_symbols}")
                     SYMBOLS = new_symbols
@@ -683,7 +700,7 @@ async def _run_scanner() -> None:
         )
         blacklist = set(cfg["trading"].get("blacklist", []))
         _scanner_cache = {"results": candidates, "timestamp": time.time()}
-        new_symbols = [c.symbol for c in candidates if c.symbol not in blacklist]
+        new_symbols = [_norm(c.symbol) for c in candidates if c.symbol not in blacklist]
         if new_symbols:
             logger.info(f"🔄 Scanner 更新: {new_symbols}")
             SYMBOLS = new_symbols
@@ -867,13 +884,13 @@ async def run_strategy_once() -> None:
             all_syms.add(s)
         if _scanner_cache["results"]:
             for c in _scanner_cache["results"][:5]:
-                all_syms.add(c.symbol)
+                all_syms.add(_norm(c.symbol))
         risk_manager.sync_from_exchange(exchange, list(all_syms))
     except Exception as e:
         logger.warning(f"持仓同步失败: {e}")
     # 始终合并交易所持仓币，确保止盈止损检查不遗漏
     if auto_add and _scanner_cache["results"]:
-        raw_symbols = [c.symbol for c in _scanner_cache["results"][:5]]
+        raw_symbols = [_norm(c.symbol) for c in _scanner_cache["results"][:5]]
         symbols_to_trade = list(dict.fromkeys(raw_symbols + list(all_syms)))
     else:
         symbols_to_trade = list(dict.fromkeys(SYMBOLS + list(all_syms)))
@@ -939,7 +956,7 @@ async def _evaluate_pools(symbol: str, df_1m, current_price: float, atr: float, 
                     order = traders[symbol].market_sell(symbol, qty, current_price, position_side="LONG", reduce_only=True)
                 else:
                     order = traders[symbol].market_buy(symbol, qty, current_price, position_side="SHORT", reduce_only=True)
-                if order.get("status") != "failed":
+                if order.get("status") not in ("failed", "open_exists") and order.get("amount", 0) > 0:
                     _position_pools.remove_locked_position(symbol, pos)
                     pnl = pos.unrealized_pnl(current_price)
                     _position_pools.closed_pnl += pnl
@@ -968,7 +985,7 @@ async def _evaluate_pools(symbol: str, df_1m, current_price: float, atr: float, 
                     order = traders[symbol].market_buy(symbol, qty, current_price)
                 else:
                     order = traders[symbol].market_sell(symbol, qty, current_price, position_side="SHORT")
-                if order.get("status") != "failed":
+                if order.get("status") not in ("failed", "open_exists") and order.get("amount", 0) > 0:
                     fill_price = order.get("average") or order.get("price") or current_price
                     fill_qty = order.get("filled") or order.get("amount") or qty
                     # 记录到池
@@ -988,7 +1005,7 @@ async def _evaluate_pools(symbol: str, df_1m, current_price: float, atr: float, 
                     order = traders[symbol].market_buy(symbol, qty, current_price)
                 else:
                     order = traders[symbol].market_sell(symbol, qty, current_price, position_side="SHORT")
-                if order.get("status") != "failed":
+                if order.get("status") not in ("failed", "open_exists") and order.get("amount", 0) > 0:
                     fill_price = order.get("average") or order.get("price") or current_price
                     fill_qty = order.get("filled") or order.get("amount") or qty
                     _position_pools.add_seal_position(symbol, side, fill_price, fill_qty)
@@ -1035,7 +1052,14 @@ async def process_symbol(symbol: str) -> None:
                 enable_regime_detection=True,
                 regime_weights=cfg["strategy"]["regime_weights"]
             )
-            traders[symbol] = Trader(exchange=exchange, max_retries=3, retry_delay=1.0)
+            exec_cfg = cfg.get("execution", {})
+            traders[symbol] = Trader(
+                exchange=exchange,
+                max_retries=3,
+                retry_delay=1.0,
+                entry_order_type=exec_cfg.get("entry_order_type", "market"),
+                maker_offset_bps=exec_cfg.get("maker_offset_bps", 2.0),
+            )
             traders[symbol].set_dry_run(DRY_RUN)
 
         df = kline_fetchers[symbol].fetch_klines(
@@ -1061,12 +1085,13 @@ async def process_symbol(symbol: str) -> None:
             symbol, current_price, atr=atr
         )
         if triggered:
+            should_return = False
             for item in triggered:
                 side = item["side"]
                 position = item["position"]
                 action = item["action"]
                 close_qty = item.get("close_qty", position.quantity)
-                labels = {"STOP_LOSS": "止损", "TAKE_PROFIT": "止盈", "PARTIAL_TP": "分批止盈", "TRAILING_STOP": "追踪止盈", "TIME_EXIT": "时间退出"}
+                labels = {"STOP_LOSS": "止损", "TAKE_PROFIT": "止盈", "PARTIAL_TP": "分批止盈", "TRAILING_STOP": "追踪止盈", "TIME_EXIT": "时间退出", "UNLOCK_HEDGED": "双向解锁"}
                 label = labels.get(action, action)
                 logger.info(f"{symbol} {side} 触发{label}，平仓量={close_qty}")
                 if side == "long":
@@ -1088,7 +1113,11 @@ async def process_symbol(symbol: str) -> None:
                         order2 = traders[symbol].market_buy(symbol, position.quantity, current_price, position_side="SHORT", reduce_only=True)
                     if order2["status"] != "failed":
                         risk_manager.close_position(symbol, side, current_price)
-            return
+                # 双向解锁后不退出，继续评估是否开新仓
+                if action != "UNLOCK_HEDGED":
+                    should_return = True
+            if should_return:
+                return
 
         # ── 三层仓位池评估 ──────────────────────────────────────────
         if _pools_enabled and _position_pools and _mtf_detector:
@@ -1153,11 +1182,17 @@ async def process_symbol(symbol: str) -> None:
         pos_dict = risk_manager.get_position(symbol)
 
         # 反向信号优先平仓；平仓不应被开仓过滤器或新开仓风控拦截。
+        # 反向平仓阈值 (0.25) 高于入场阈值 (0.15)，避免噪音触发胡乱平仓
+        _REVERSE_CLOSE_THRESHOLD = 0.25
+
         if signal == Signal.BUY and pos_dict and "short" in pos_dict:
+            if strength < _REVERSE_CLOSE_THRESHOLD:
+                logger.debug(f"{symbol} BUY信号强度不足({strength:.3f}<{_REVERSE_CLOSE_THRESHOLD})，保留空头")
+                return
             position = pos_dict["short"]
             close_qty = position.quantity
             order = traders[symbol].market_buy(symbol, close_qty, current_price, position_side="SHORT", reduce_only=True)
-            if order["status"] != "failed":
+            if order["status"] not in ("failed", "open_exists") and order.get("amount", 0) > 0:
                 pnl = (position.entry_price - current_price) * close_qty
                 risk_manager.close_position(symbol, "short", current_price)
                 audit_logger.log_trade(TradeContext(
@@ -1171,10 +1206,13 @@ async def process_symbol(symbol: str) -> None:
             return
 
         if signal == Signal.SELL and pos_dict and "long" in pos_dict:
+            if strength > -_REVERSE_CLOSE_THRESHOLD:
+                logger.debug(f"{symbol} SELL信号强度不足(|{strength:.3f}|<{_REVERSE_CLOSE_THRESHOLD})，保留多头")
+                return
             position = pos_dict["long"]
             close_qty = position.quantity
             order = traders[symbol].market_sell(symbol, close_qty, current_price, position_side="LONG", reduce_only=True)
-            if order["status"] != "failed":
+            if order["status"] not in ("failed", "open_exists") and order.get("amount", 0) > 0:
                 pnl = (current_price - position.entry_price) * close_qty
                 risk_manager.close_position(symbol, "long", current_price)
                 audit_logger.log_trade(TradeContext(
@@ -1245,7 +1283,7 @@ async def process_symbol(symbol: str) -> None:
                 logger.info(f"{symbol} 已有空头持仓，不再加仓")
             else:
                 order = traders[symbol].market_sell(symbol, quantity, current_price, position_side="SHORT")
-                if order["status"] != "failed":
+                if order["status"] not in ("failed", "open_exists") and order.get("amount", 0) > 0:
                     risk_manager.open_position(
                         symbol=symbol,
                         side="short",
@@ -1303,7 +1341,7 @@ async def scanner_loop() -> None:
                 logger.warning("Scanner.scan() 超时，跳过本轮")
                 continue
             _scanner_cache = {"results": candidates, "timestamp": time.time()}
-            new_symbols = [c.symbol for c in candidates if c.symbol not in blacklist]
+            new_symbols = [_norm(c.symbol) for c in candidates if c.symbol not in blacklist]
             if new_symbols != SYMBOLS:
                 logger.info(f"🔄 Scanner 更新: {len(new_symbols)} 个币 → {new_symbols}")
                 SYMBOLS = new_symbols

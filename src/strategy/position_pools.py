@@ -471,18 +471,19 @@ class PositionPools:
 
             # 4b. 趋势减仓（小趋势震荡）
             if trend.should_reduce_trend():
-                # 盈利的单优先平仓（跟 Nerve-Knife 一致：盈利一单追踪止盈减一单）
+                # 每次只平盈利最多的一单，不平全部（避免震荡期集体平仓）
                 same_side = self._get_same_side_trend(symbol, side)
-                for pos in same_side:
-                    if pos.pnl_pct(current_price) > 0:
-                        actions.append({
-                            'action': 'CLOSE_TREND',
-                            'side': side,
-                            'quantity': pos.quantity,
-                            'layer': pos.layer,
-                            'position': pos,
-                            'reason': f'小趋势震荡减仓 (盈利={pos.pnl_pct(current_price)*100:.2f}%)'
-                        })
+                profitable = [p for p in same_side if p.pnl_pct(current_price) > 0]
+                if profitable:
+                    best = max(profitable, key=lambda p: p.pnl_pct(current_price))
+                    actions.append({
+                        'action': 'CLOSE_TREND',
+                        'side': side,
+                        'quantity': best.quantity,
+                        'layer': best.layer,
+                        'position': best,
+                        'reason': f'小趋势震荡减仓 (盈利={best.pnl_pct(current_price)*100:.2f}%)'
+                    })
 
             # 4c. 海豹突击队检查
             has_loss = any(

@@ -1,4 +1,4 @@
-"""交易执行模块"""
+﻿"""交易执行模块"""
 
 import math
 import time
@@ -16,7 +16,9 @@ class Trader:
         self,
         exchange: ccxt.Exchange,
         max_retries: int = 3,
-        retry_delay: float = 1.0
+        retry_delay: float = 1.0,
+        entry_order_type: str = "market",
+        maker_offset_bps: float = 2.0,
     ):
         """
         初始化交易执行器
@@ -29,6 +31,8 @@ class Trader:
         self.exchange = exchange
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        self.entry_order_type = (entry_order_type or "market").lower()
+        self.maker_offset_bps = max(0.0, maker_offset_bps)
         self.dry_run = False  # 模拟模式标志
         self.min_notional = 5.1  # 最低名义价值(USD)，Bitget 合约最低 $5，留 $0.1 缓冲
 
