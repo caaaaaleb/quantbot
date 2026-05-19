@@ -93,6 +93,7 @@ _position_pools: Optional[PositionPools] = None
 _mtf_detector: Optional[MultiTimeframeDetector] = None
 _pools_enabled: bool = False
 _mtf_enabled: bool = False
+_shutdown_event: Optional[asyncio.Event] = None
 
 
 # ────────────────────────────────────────────────────────────────
@@ -107,7 +108,7 @@ async def lifespan(app: FastAPI):
     global kline_fetchers, strategies, routers, traders
     global risk_manager, market_filter, audit_logger, signal_bridge, ws_client, backtester
     global _last_scan_time, _scanner_symbols
-    global _strategy_task, _ws_task, _scanner_task, _scanner_cache
+    global _strategy_task, _ws_task, _scanner_task, _scanner_cache, _shutdown_event
 
     logger.info("=" * 60)
     logger.info("🟢 QuantBot 启动中...")
@@ -353,27 +354,53 @@ async def lifespan(app: FastAPI):
     else:
         _scanner_task = None
 
+    _shutdown_event = asyncio.Event()
     _strategy_task = asyncio.create_task(delayed_strategy())
 
     yield  # ← HTTP 服务在这里运行
 
     # 关闭
     logger.info("🔴 QuantBot 正在关闭...")
-    for name, task in [
-        ("策略循环", _strategy_task),
-        ("WebSocket", _ws_task),
-        ("Scanner", _scanner_task),
-    ]:
-        if task:
-            task.cancel()
-            try:
-                await asyncio.wait_for(task, timeout=3.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
-            logger.info(f"   {name} 已停止")
+    if _shutdown_event:
+        _shutdown_event.set()
+
+    # 1. Scanner（独立循环，先取消）
+    if _scanner_task:
+        _scanner_task.cancel()
+        try:
+            await asyncio.wait_for(_scanner_task, timeout=5.0)
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            pass
+        logger.info("   Scanner 已停止")
+
+    # 2. WebSocket（先断连，再取消任务）
+    if _ws_task:
+        _ws_task.cancel()
+        try:
+            await asyncio.wait_for(_ws_task, timeout=5.0)
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            pass
+        logger.info("   WebSocket 已停止")
+
+    # 3. 策略循环（最后停，因为需要 exchange 连接来平仓）
+    if _strategy_task:
+        _strategy_task.cancel()
+        try:
+            await asyncio.wait_for(_strategy_task, timeout=10.0)
+        except asyncio.TimeoutError:
+            logger.warning("   策略循环 超时未结束，强制退出")
+        except asyncio.CancelledError:
+            logger.info("   策略循环 已停止")
+        else:
+            logger.info("   策略循环 已停止")
 
     if ws_client:
         await ws_client.close()
+    if exchange:
+        try:
+            await asyncio.get_running_loop().run_in_executor(None, exchange.close)
+        except Exception:
+            pass
     logger.info("✅ QuantBot 已关闭")
 
 
@@ -856,6 +883,9 @@ async def list_agents():
 # ────────────────────────────────────────────────────────────────
 
 async def run_strategy_once() -> None:
+    if exchange is None:
+        logger.warning("交易所未初始化，跳过策略执行")
+        return
     logger.info("=" * 60)
     logger.info("🔄 策略执行开始")
     # 每次执行前从交易所同步真实持仓（避免手动平仓后状态不一致）
@@ -887,7 +917,18 @@ async def run_strategy_once() -> None:
                 all_syms.add(_norm(c.symbol))
         risk_manager.sync_from_exchange(exchange, list(all_syms))
     except Exception as e:
-        logger.warning(f"持仓同步失败: {e}")
+        msg = str(e)
+        if "Invalid IP" in msg:
+            logger.error(
+                "Bitget API 拒绝连接：IP 地址未加入白名单。\n"
+                "请登录 Bitget 官网 → API 管理 → 编辑该 API Key → "
+                "将远程服务器的公网 IP 添加到 IP 白名单中。\n"
+                f"原始错误: {e}"
+            )
+        elif "401" in msg or "403" in msg or "Authentication" in msg or "Unauthorized" in msg:
+            logger.error(f"Bitget API 认证失败，请检查 API Key/Secret/Passphrase 是否正确: {e}")
+        else:
+            logger.warning(f"持仓同步失败: {e}")
     # 始终合并交易所持仓币，确保止盈止损检查不遗漏
     if auto_add and _scanner_cache["results"]:
         raw_symbols = [_norm(c.symbol) for c in _scanner_cache["results"][:5]]
@@ -896,6 +937,9 @@ async def run_strategy_once() -> None:
         symbols_to_trade = list(dict.fromkeys(SYMBOLS + list(all_syms)))
     logger.info(f"📡 处理列表 ({len(symbols_to_trade)}): {symbols_to_trade[:8]}{'...' if len(symbols_to_trade)>8 else ''}")
     for symbol in symbols_to_trade:
+        if _shutdown_event and _shutdown_event.is_set():
+            logger.info("策略执行中收到停止信号，中止本轮")
+            break
         await process_symbol(symbol)
     stats = risk_manager.get_stats()
     logger.info(
@@ -1305,12 +1349,18 @@ async def process_symbol(symbol: str) -> None:
 
 
 async def strategy_loop() -> None:
+    global _shutdown_event
     interval = cfg["strategy"]["interval"]
     logger.info(f"🚀 策略循环启动 | 间隔: {interval}s | 交易对: {SYMBOLS}")
-    while True:
+    while _shutdown_event is None or not _shutdown_event.is_set():
         await run_strategy_once()
         logger.info(f"⏳ 等待 {interval}s 后执行下一轮...")
-        await asyncio.sleep(interval)
+        try:
+            await asyncio.wait_for(_shutdown_event.wait(), timeout=interval)
+            break
+        except asyncio.TimeoutError:
+            pass
+    logger.info("策略循环收到停止信号，正在退出...")
 
 
 async def scanner_loop() -> None:

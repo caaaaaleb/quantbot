@@ -606,7 +606,16 @@ class RiskManager:
                     sym = p.get('symbol', '')
                     active_exchange_symbols.add(sym)
         except Exception as e:
-            logger.warning(f"获取交易所全部持仓失败: {e}")
+            msg = str(e)
+            if "Invalid IP" in msg:
+                logger.error(
+                    "Bitget API 拒绝连接：IP 地址未加入白名单。"
+                    "请在 Bitget 官网 API 管理中将服务器 IP 添加到白名单。"
+                )
+            elif "401" in msg or "403" in msg or "Authentication" in msg or "Unauthorized" in msg:
+                logger.error(f"Bitget API 认证失败，请检查 API Key/Secret/Passphrase。原始错误: {e}")
+            else:
+                logger.warning(f"获取交易所全部持仓失败: {e}")
 
         # ── Step 2: 清理交易所已不存在的持仓 ──
         for sym in list(self.positions.keys()):
